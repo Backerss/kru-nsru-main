@@ -1,0 +1,110 @@
+/* Forgot Password - Request Email Page */
+.forgot-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--color-primary) 0%, rgba(44,8,201,0.8) 100%);
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+}
+
+.forgot-card {
+  background: var(--color-white);
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  border: 1px solid var(--color-secondary-2);
+  animation: slideInDown 0.8s ease-out;
+}
+
+.icon-wrapper {
+  color: var(--color-primary);
+}
+
+.forgot-title {
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+.form-control {
+  border: 2px solid var(--color-secondary-2);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background-color: var(--color-white);
+}
+
+.form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(44,8,201,0.15);
+  background-color: var(--color-white);
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, var(--color-primary), rgba(44,8,201,0.8));
+  border: none;
+  border-radius: 8px;
+  padding: 0.875rem 2rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, rgba(44,8,201,0.9), var(--color-primary));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(44,8,201,0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+a:hover {
+  color: rgba(44,8,201,0.8);
+  text-decoration: underline;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 576px) {
+  .forgot-container {
+    padding: 1rem 0;
+  }
+  
+  .forgot-card {
+    padding: 2rem 1.5rem;
+    margin: 1rem 0;
+    border-radius: 12px;
+  }
+  
+  .forgot-title {
+    font-size: 1.5rem;
+  }
+}

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>
+        <%= title %>
+    </title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/colors.css">
+    <link rel="stylesheet" href="/register.css">
+</head>
+
+<body>
+    <div class="register-container">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-8 col-lg-6">
+                    <div class="register-card">
+                        <div class="text-center mb-4">
+                            <h1 class="register-title">
+                                <%= title %>
+                            </h1>
+                            <p class="text-muted">กรอกข้อมูลเพื่อสมัครสมาชิก</p>
+                        </div>
+
+                        <!-- Google OAuth Section -->
+                        <div class="oauth-section mb-4">
+                            <button type="button" class="btn btn-google w-100 mb-3" id="googleRegisterBtn">
+                                <svg class="google-icon me-2" width="18" height="18" viewBox="0 0 24 24">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                </svg>
+                                สมัครด้วย Google
+                            </button>
+                            
+                            <div class="divider">
+                                <span class="divider-text">หรือ</span>
+                            </div>
+                        </div>
+
+                        <form action="/register" method="POST" class="register-form" id="registerForm">
+                            <!-- รหัสนศ -->
+                            <div class="mb-3">
+                                <label for="studentId" class="form-label">รหัสนักศึกษา <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" id="studentId" name="studentId" class="form-control"
+                                    placeholder="กรอกรหัสนักศึกษา" required>
+                            </div>
+
+                            <!-- คำนำหน้า ชื่อ สกุล -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-sm-3">
+                                    <label for="prefix" class="form-label">คำนำหน้า <span
+                                            class="text-danger">*</span></label>
+                                    <select id="prefix" name="prefix" class="form-select" required>
+                                        <option value="">เลือกคำนำหน้า</option>
+                                        <option value="นาย">นาย</option>
+                                        <option value="นางสาว">นางสาว</option>
+                                        <option value="นาง">นาง</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-4">
+                                    <label for="firstName" class="form-label">ชื่อ <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" id="firstName" name="firstName" class="form-control"
+                                        placeholder="ชื่อ" required>
+                                </div>
+                                <div class="col-12 col-sm-5">
+                                    <label for="lastName" class="form-label">นามสกุล <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" id="lastName" name="lastName" class="form-control"
+                                        placeholder="นามสกุล" required>
+                                </div>
+                            </div>
+
+                            <!-- วันเดือนปีเกิด และ อายุ -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-sm-8">
+                                    <label for="birthdate" class="form-label">วันเดือนปีเกิด <span
+                                            class="text-danger">*</span></label>
+                                    <input type="date" id="birthdate" name="birthdate" class="form-control" required>
+                                    <div id="birthdateThai" class="form-text text-muted mt-1">(ปี พ.ศ. จะแสดงที่นี่)</div>
+                                </div>
+                                <div class="col-12 col-sm-4">
+                                    <label for="age" class="form-label">อายุ</label>
+                                    <input type="number" id="age" name="age" class="form-control" placeholder="อายุ"
+                                        readonly>
+                                </div>
+                            </div>
+
+                            <!-- อีเมล และ เบอร์ -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-12 col-sm-6">
+                                    <label for="email" class="form-label">อีเมล <span
+                                            class="text-danger">*</span></label>
+                                    <input type="email" id="email" name="email" class="form-control"
+                                        placeholder="example@email.com" required>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label for="phone" class="form-label">เบอร์โทรศัพท์ <span
+                                            class="text-danger">*</span></label>
+                                    <input type="tel" id="phone" name="phone" class="form-control"
+                                        placeholder="0xx-xxx-xxxx" required>
+                                </div>
+                            </div>
+
+                            <!-- รหัสผ่าน -->
+                            <div class="mb-3">
+                                <label for="password" class="form-label">รหัสผ่าน <span
+                                        class="text-danger">*</span></label>
+                                <input type="password" id="password" name="password" class="form-control"
+                                    placeholder="กรอกรหัสผ่าน" required minlength="6">
+                                <div class="form-text">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</div>
+                            </div>
+
+                            <!-- ยืนยันรหัสผ่าน -->
+                            <div class="mb-4">
+                                <label for="confirmPassword" class="form-label">ยืนยันรหัสผ่าน <span
+                                        class="text-danger">*</span></label>
+                                <input type="password" id="confirmPassword" name="confirmPassword" class="form-control"
+                                    placeholder="ยืนยันรหัสผ่าน" required>
+                                <div class="invalid-feedback" id="passwordError"></div>
+                            </div>
+
+                            <!-- นโยบายของเว็บ -->
+                            <div class="form-check mb-4">
+                                <input class="form-check-input" type="checkbox" id="agreePolicy" name="agreePolicy"
+                                    required>
+                                <label class="form-check-label" for="agreePolicy">
+                                    ฉันยอมรับ <a href="#" id="privacyLink" class="text-primary" data-bs-toggle="modal"
+                                        data-bs-target="#privacyModal" role="button">นโยบายความเป็นส่วนตัว</a> และ <a
+                                        href="#" class="text-primary">เงื่อนไขการใช้งาน</a>
+                                </label>
+                            </div>
+
+                            <!-- Submit button -->
+                            <button type="submit" class="btn btn-primary w-100 mb-3 btn-lg">สมัครสมาชิก</button>
+
+                            <!-- Link to login -->
+                            <div class="text-center">
+                                <p class="mb-0">มีบัญชีอยู่แล้ว? <a href="/login"
+                                        class="text-primary fw-bold">เข้าสู่ระบบที่นี่</a></p>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Privacy Modal -->
+        <div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="privacyModalLabel">นโยบายความเป็นส่วนตัว</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="ปิด"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h6 class="fw-bold text-primary mb-3">ข้อมูลจะถูกใช้เพื่อการศึกษาเท่านั้น</h6>
+                        
+                        <div class="mb-4">
+                            <h6 class="fw-semibold mb-2">การใช้ข้อมูลแต่ละประเภท:</h6>
+                            
+                            <div class="mb-3">
+                                <strong>รหัสนักศึกษา:</strong> ใช้สำหรับการระบุตัวตนในระบบการเรียนการสอน และการติดตามผลการเรียน
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>ชื่อ-สกุล และคำนำหน้า:</strong> ใช้สำหรับการสร้างบัญชีผู้ใช้ การออกใบประกาศนียบัตร และการติดต่อสื่อสาร
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>วันเกิดและอายุ:</strong> ใช้เพื่อวิเคราะห์กลุ่มอายุของผู้เรียน และปรับแต่งเนื้อหาให้เหมาะสม
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>อีเมล:</strong> ใช้สำหรับการส่งข้อมูลการเรียน การแจ้งเตือน และการสื่อสารเกี่ยวกับการศึกษา
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>เบอร์โทรศัพท์:</strong> ใช้สำหรับการติดต่อฉุกเฉิน การแจ้งข่าวสาร และการยืนยันตัวตน
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">หลักการคุ้มครองข้อมูล:</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">• ข้อมูลจะถูกเข้ารหัสและเก็บรักษาอย่างปลอดภัย</li>
+                                <li class="mb-2">• จะไม่มีการขายหรือแบ่งปันข้อมูลให้กับบุคคลที่สาม</li>
+                                <li class="mb-2">• ใช้เฉพาะเพื่อการพัฒนาระบบการเรียนการสอนเท่านั้น</li>
+                                <li class="mb-2">• ผู้ใช้สามารถขอดูหรือลบข้อมูลได้ตลอดเวลา</li>
+                                <li class="mb-2">• ข้อมูลจะถูกลบหลังจากสิ้นสุดการใช้งานตามระยะเวลาที่กำหนด</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <small><strong>หมายเหตุ:</strong> การศึกษานี้เป็นส่วนหนึ่งของโครงการวิจัยทางการศึกษา ข้อมูลที่ได้จะช่วยในการปรับปรุงคุณภาพการเรียนการสอนให้ดียิ่งขึ้น</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Calculate age from birthdate
+        document.getElementById('birthdate').addEventListener('change', function () {
+            const birthDate = new Date(this.value);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            document.getElementById('age').value = age >= 0 ? age : '';
+        });
+
+        // Password confirmation validation
+        document.getElementById('confirmPassword').addEventListener('input', function () {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            const errorDiv = document.getElementById('passwordError');
+
+            if (confirmPassword && password !== confirmPassword) {
+                this.classList.add('is-invalid');
+                errorDiv.textContent = 'รหัสผ่านไม่ตรงกัน';
+            } else {
+                this.classList.remove('is-invalid');
+                errorDiv.textContent = '';
+            }
+        });
+
+        // Form validation
+        document.getElementById('registerForm').addEventListener('submit', function (e) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                document.getElementById('confirmPassword').classList.add('is-invalid');
+                document.getElementById('passwordError').textContent = 'รหัสผ่านไม่ตรงกัน';
+            }
+        });
+
+        // Google OAuth registration (placeholder for backend implementation)
+        document.getElementById('googleRegisterBtn').addEventListener('click', function() {
+            // TODO: Implement Google OAuth flow
+            alert('Google OAuth registration will be implemented in backend');
+            console.log('Google OAuth registration clicked');
+        });
+
+        // Show Thai Buddhist year (พ.ศ.) for birthdate and calculate age
+        function formatDateToThai(birthDate) {
+            if (!birthDate || isNaN(birthDate.getTime())) return '';
+            const d = String(birthDate.getDate()).padStart(2, '0');
+            const m = String(birthDate.getMonth() + 1).padStart(2, '0');
+            const by = birthDate.getFullYear() + 543; // พ.ศ.
+            return `${d}/${m}/${by}`;
+        }
+
+        const birthInput = document.getElementById('birthdate');
+        const birthThaiEl = document.getElementById('birthdateThai');
+        function updateAgeAndThai() {
+            const val = birthInput.value;
+            if (!val) {
+                birthThaiEl.textContent = '(ปี พ.ศ. จะแสดงที่นี่)';
+                document.getElementById('age').value = '';
+                return;
+            }
+            const birthDate = new Date(val);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            document.getElementById('age').value = age >= 0 ? age : '';
+            birthThaiEl.textContent = 'วันเกิด (พ.ศ.): ' + formatDateToThai(birthDate);
+        }
+
+        birthInput.addEventListener('change', updateAgeAndThai);
+        // initialize if value present
+        if (birthInput.value) updateAgeAndThai();
+
+        // Validate age on submit using SweetAlert2
+        document.getElementById('registerForm').addEventListener('submit', function (e) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                document.getElementById('confirmPassword').classList.add('is-invalid');
+                document.getElementById('passwordError').textContent = 'รหัสผ่านไม่ตรงกัน';
+                return;
+            }
+
+            const ageVal = parseInt(document.getElementById('age').value, 10);
+            if (isNaN(ageVal)) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณากรอกวันเกิด',
+                    text: 'โปรดระบุวัน/เดือน/ปีเกิดของคุณเพื่อคำนวณอายุ',
+                    confirmButtonText: 'ตกลง'
+                });
+                return;
+            }
+
+            if (ageVal < 18) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ไม่สามารถสมัครได้',
+                    html: `<p>ขออภัย คุณต้องมีอายุตั้งแต่ 18 ปีขึ้นไปเพื่อสมัครสมาชิก</p>
+                           <p>อายุตอนนี้: <strong>${ageVal}</strong> ปี</p>`,
+                    confirmButtonText: 'ตกลง'
+                });
+                return;
+            }
+            // otherwise allow submit
+        });
+    </script>
+</body>
+
+</html>
