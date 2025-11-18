@@ -24,10 +24,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.render('index', {
-    title: 'ยินดีต้อนรับ',
-    message: 'นี่คือหน้าแรกที่สร้างด้วย Express และ EJS',
-    items: ['ข่าว', 'เกี่ยวกับ', 'ติดต่อ']
+  res.render('login', {
+    title: 'เข้าสู่ระบบ'
   });
 });
 
@@ -255,6 +253,145 @@ app.post('/forgot-password/reset-password', (req, res) => {
   delete otpStore[email];
 
   return res.json({ success: true, message: 'เปลี่ยนรหัสผ่านสำเร็จ' });
+});
+
+// Survey routes
+app.get('/survey/home', (req, res) => {
+  // In production, get user data from session/JWT
+  const mockUser = {
+    studentId: '6510000000',
+    name: 'นาย ทดสอบ ระบบ',
+    faculty: 'คณะวิทยาศาสตร์',
+    major: 'วิทยาการคอมพิวเตอร์',
+    year: '4',
+    email: 'student@example.com'
+  };
+
+  res.render('survey/home', {
+    title: 'หน้าหลัก',
+    user: mockUser
+  });
+});
+
+app.get('/survey/questionnaire', (req, res) => {
+  res.render('survey/questionnaire', {
+    title: 'แบบสอบถาม'
+  });
+});
+
+app.get('/survey/settings', (req, res) => {
+  // In production, get user data from session/JWT
+  const mockUser = {
+    studentId: '6510000000',
+    name: 'นาย ทดสอบ ระบบ',
+    faculty: 'คณะวิทยาศาสตร์',
+    major: 'วิทยาการคอมพิวเตอร์',
+    year: '4',
+    email: 'student@example.com'
+  };
+
+  res.render('survey/settings', {
+    title: 'ตั้งค่า',
+    user: mockUser
+  });
+});
+
+// Survey form route
+app.get('/survey/form/:id', (req, res) => {
+  const surveyId = req.params.id;
+  
+  // Mock survey data based on ID
+  const surveys = {
+    '1': {
+      title: 'แบบสอบถามความพึงพอใจการเรียนการสอน',
+      description: 'แบบสอบถามเพื่อประเมินความพึงพอใจต่อการเรียนการสอนในภาคเรียนที่ผ่านมา',
+      icon: 'mortarboard',
+      questionCount: 7,
+      duration: 5
+    },
+    '2': {
+      title: 'แบบสอบถามความพึงพอใจสิ่งอำนวยความสะดวก',
+      description: 'ประเมินความพึงพอใจต่อสิ่งอำนวยความสะดวกภายในมหาวิทยาลัย',
+      icon: 'building',
+      questionCount: 7,
+      duration: 4
+    },
+    '3': {
+      title: 'แบบสอบถามความพึงพอใจห้องสมุด',
+      description: 'ประเมินความพึงพอใจการให้บริการและทรัพยากรของห้องสมุด',
+      icon: 'book',
+      questionCount: 7,
+      duration: 3
+    }
+  };
+
+  const survey = surveys[surveyId] || surveys['1'];
+
+  res.render('survey/form', {
+    title: survey.title,
+    survey: survey
+  });
+});
+
+// Submit survey endpoint
+app.post('/survey/submit/:id', (req, res) => {
+  const surveyId = req.params.id;
+  const answers = req.body;
+  
+  // In production, save to database
+  console.log('Survey submission:', { surveyId, answers });
+  
+  res.json({ 
+    success: true, 
+    message: 'ส่งแบบสอบถามสำเร็จ' 
+  });
+});
+
+// Update personal info endpoint
+app.post('/survey/update-personal-info', (req, res) => {
+  const { firstName, lastName } = req.body;
+  
+  if (!firstName || !lastName) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'กรุณากรอกข้อมูลให้ครบถ้วน' 
+    });
+  }
+  
+  // In production, update database
+  console.log('Personal info update:', { firstName, lastName });
+  
+  res.json({ 
+    success: true, 
+    message: 'บันทึกข้อมูลสำเร็จ' 
+  });
+});
+
+// Change password endpoint
+app.post('/survey/change-password', (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'กรุณากรอกข้อมูลให้ครบถ้วน' 
+    });
+  }
+  
+  if (newPassword.length < 6) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' 
+    });
+  }
+  
+  // In production, verify current password and update
+  console.log('Password change request');
+  
+  res.json({ 
+    success: true, 
+    message: 'เปลี่ยนรหัสผ่านสำเร็จ' 
+  });
 });
 
 app.listen(port, () => {
