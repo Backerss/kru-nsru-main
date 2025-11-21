@@ -2,6 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', function() {
   initCharts();
+  initAdvancedAnalytics();
   initUserManagement();
   initExportButtons();
 });
@@ -20,7 +21,7 @@ function computeAgeFromBirthdate(birthdate) {
   return age >= 0 ? age : null;
 }
 
-// Initialize Charts
+// Initialize Basic Charts
 function initCharts() {
   // Survey Responses Bar Chart
   const surveyNames = {
@@ -116,6 +117,359 @@ function initCharts() {
         }
       }
     });
+  }
+}
+
+// Initialize Advanced Analytics
+async function initAdvancedAnalytics() {
+  try {
+    const response = await fetch('/admin/api/analytics');
+    const result = await response.json();
+
+    if (!result.success) {
+      console.error('Failed to load analytics:', result.message);
+      return;
+    }
+
+    const analytics = result.analytics;
+
+    // 1. Radar Chart
+    initRadarChart(analytics.radarChart);
+
+    // 2. Performance Gauge
+    initPerformanceGauge(analytics.performanceGauge);
+
+    // 3. Top & Bottom Skills Tables
+    populateSkillsTables(analytics.topSkills, analytics.bottomSkills);
+
+    // 4. Comparative Charts
+    initComparativeCharts(analytics.comparative);
+
+    // 5. Trend Chart (if data available)
+    if (analytics.trendData.enabled) {
+      initTrendChart(analytics.trendData);
+    }
+
+  } catch (error) {
+    console.error('Error loading advanced analytics:', error);
+  }
+}
+
+// Radar Chart for TPACK dimensions
+function initRadarChart(data) {
+  const ctx = document.getElementById('radarChart');
+  if (!ctx) return;
+
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'คะแนนเฉลี่ย',
+        data: data.scores,
+        backgroundColor: 'rgba(44, 8, 201, 0.2)',
+        borderColor: 'rgba(44, 8, 201, 1)',
+        borderWidth: 2,
+        pointBackgroundColor: 'rgba(44, 8, 201, 1)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(44, 8, 201, 1)',
+        pointRadius: 5,
+        pointHoverRadius: 7
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        r: {
+          beginAtZero: true,
+          min: 0,
+          max: data.maxScore,
+          ticks: {
+            stepSize: 1,
+            callback: function(value) {
+              return value.toFixed(1);
+            }
+          },
+          pointLabels: {
+            font: {
+              size: 12
+            }
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.label + ': ' + parseFloat(context.raw).toFixed(2) + ' / ' + data.maxScore;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Performance Gauge (using doughnut chart as gauge)
+function initPerformanceGauge(data) {
+  const ctx = document.getElementById('gaugeChart');
+  if (!ctx) return;
+
+  const score = parseFloat(data.score);
+  const percentage = (score / data.maxScore) * 100;
+
+  // Update text elements
+  document.getElementById('gaugeScore').textContent = score.toFixed(2) + ' / ' + data.maxScore;
+  document.getElementById('gaugeLabel').innerHTML = `<span class="badge" style="background-color: ${data.color}; font-size: 1rem;">${data.label}</span>`;
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['คะแนน', 'คงเหลือ'],
+      datasets: [{
+        data: [score, data.maxScore - score],
+        backgroundColor: [data.color, '#e9ecef'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      circumference: 180,
+      rotation: -90,
+      cutout: '70%',
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          enabled: false
+        }
+      }
+    }
+  });
+}
+
+// Populate Top & Bottom Skills Tables
+function populateSkillsTables(topSkills, bottomSkills) {
+  const topTable = document.getElementById('topSkillsTable')?.querySelector('tbody');
+  const bottomTable = document.getElementById('bottomSkillsTable')?.querySelector('tbody');
+
+  if (topTable && topSkills.length > 0) {
+    topTable.innerHTML = topSkills.map((skill, index) => `
+      <tr>
+        <td class="text-center"><strong>${index + 1}</strong></td>
+        <td>
+          <div class="mb-1">${skill.question}</div>
+          <small class="text-muted">
+            <span class="badge bg-light text-dark">${skill.category}</span>
+            <span class="badge bg-info">${skill.surveyName}</span>
+          </small>
+        </td>
+        <td class="text-center">
+          <span class="badge bg-success" style="font-size: 0.9rem;">${skill.mean}</span>
+          <br><small class="text-muted">${skill.responseCount} คน</small>
+        </td>
+      </tr>
+    `).join('');
+  } else if (topTable) {
+    topTable.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">ยังไม่มีข้อมูล</td></tr>';
+  }
+
+  if (bottomTable && bottomSkills.length > 0) {
+    bottomTable.innerHTML = bottomSkills.map((skill, index) => `
+      <tr>
+        <td class="text-center"><strong>${index + 1}</strong></td>
+        <td>
+          <div class="mb-1">${skill.question}</div>
+          <small class="text-muted">
+            <span class="badge bg-light text-dark">${skill.category}</span>
+            <span class="badge bg-warning text-dark">${skill.surveyName}</span>
+          </small>
+        </td>
+        <td class="text-center">
+          <span class="badge bg-danger" style="font-size: 0.9rem;">${skill.mean}</span>
+          <br><small class="text-muted">${skill.responseCount} คน</small>
+        </td>
+      </tr>
+    `).join('');
+  } else if (bottomTable) {
+    bottomTable.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">ยังไม่มีข้อมูล</td></tr>';
+  }
+}
+
+// Comparative Charts (Faculty & Year)
+function initComparativeCharts(comparative) {
+  // Faculty Comparison
+  const facultyCtx = document.getElementById('facultyComparisonChart');
+  if (facultyCtx && Object.keys(comparative.byFaculty).length > 0) {
+    const facultyData = Object.entries(comparative.byFaculty)
+      .filter(([key]) => key !== 'ไม่ระบุ')
+      .sort((a, b) => parseFloat(b[1].mean) - parseFloat(a[1].mean));
+
+    new Chart(facultyCtx, {
+      type: 'bar',
+      data: {
+        labels: facultyData.map(([name]) => name.replace('คณะ', '')),
+        datasets: [{
+          label: 'คะแนนเฉลี่ย',
+          data: facultyData.map(([, data]) => parseFloat(data.mean)),
+          backgroundColor: 'rgba(54, 162, 235, 0.8)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: 5,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const faculty = facultyData[context.dataIndex];
+                return [
+                  'คะแนนเฉลี่ย: ' + context.parsed.x.toFixed(2),
+                  'จำนวนคำตอบ: ' + faculty[1].responses + ' ครั้ง'
+                ];
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Year Comparison
+  const yearCtx = document.getElementById('yearComparisonChart');
+  if (yearCtx && Object.keys(comparative.byYear).length > 0) {
+    const yearData = Object.entries(comparative.byYear)
+      .filter(([key]) => key !== 'ไม่ระบุ')
+      .sort((a, b) => a[0].localeCompare(b[0]));
+
+    new Chart(yearCtx, {
+      type: 'bar',
+      data: {
+        labels: yearData.map(([year]) => 'ปี ' + year),
+        datasets: [{
+          label: 'คะแนนเฉลี่ย',
+          data: yearData.map(([, data]) => parseFloat(data.mean)),
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.8)',
+            'rgba(255, 159, 64, 0.8)',
+            'rgba(255, 205, 86, 0.8)',
+            'rgba(75, 192, 192, 0.8)'
+          ],
+          borderColor: [
+            'rgba(255, 99, 132, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(255, 205, 86, 1)',
+            'rgba(75, 192, 192, 1)'
+          ],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 5,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const year = yearData[context.dataIndex];
+                return [
+                  'คะแนนเฉลี่ย: ' + context.parsed.y.toFixed(2),
+                  'จำนวนคำตอบ: ' + year[1].responses + ' ครั้ง'
+                ];
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+// Trend Chart (for future pre/post test)
+function initTrendChart(trendData) {
+  const ctx = document.getElementById('trendChart');
+  const alert = document.getElementById('trendAlert');
+  
+  if (!ctx) return;
+
+  if (trendData.enabled && trendData.dates.length > 0) {
+    alert.style.display = 'none';
+    ctx.style.display = 'block';
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: trendData.dates,
+        datasets: [{
+          label: 'คะแนนเฉลี่ย',
+          data: trendData.scores,
+          borderColor: 'rgba(75, 192, 192, 1)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 5,
+          pointHoverRadius: 7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 5,
+            ticks: {
+              stepSize: 0.5
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          }
+        }
+      }
+    });
+  } else {
+    alert.style.display = 'block';
+    ctx.style.display = 'none';
   }
 }
 

@@ -111,6 +111,189 @@
       </div>
     </div>
 
+    <!-- Advanced Analytics Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="alert alert-info border-0 d-flex align-items-center" role="alert">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          <div>
+            <strong>การวิเคราะห์ขั้นสูง</strong> - ข้อมูลเชิงลึกสำหรับการพัฒนาหลักสูตรและการสอน
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Radar Chart & Performance Gauge -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 fw-semibold">
+              <i class="bi bi-radar text-primary me-2"></i>กราฟเรดาร์สมรรถนะ TPACK
+            </h5>
+            <small class="text-muted">ความสมดุลของทักษะทั้ง 5 ด้าน</small>
+          </div>
+          <div class="card-body">
+            <canvas id="radarChart"></canvas>
+            <div class="mt-3 text-center">
+              <small class="text-muted">
+                <i class="bi bi-lightbulb"></i> กราฟเป็นวงกลม = ทักษะสมดุล | กราฟเบ้ = มีด้านที่โดดเด่น/อ่อน
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 fw-semibold">
+              <i class="bi bi-speedometer2 text-primary me-2"></i>เกจวัดระดับสมรรถนะ
+            </h5>
+            <small class="text-muted">ประเมินความพร้อมโดยรวม</small>
+          </div>
+          <div class="card-body d-flex flex-column align-items-center justify-content-center">
+            <canvas id="gaugeChart" style="max-width: 300px; max-height: 200px;"></canvas>
+            <div class="mt-3 text-center">
+              <h3 class="mb-1" id="gaugeScore">--</h3>
+              <p class="mb-0" id="gaugeLabel">
+                <span class="badge" id="gaugeBadge">กำลังโหลด...</span>
+              </p>
+              <small class="text-muted d-block mt-2">
+                <span class="badge bg-danger">1.0-2.5 ต้องปูพื้นฐาน</span>
+                <span class="badge bg-warning text-dark">2.5-3.5 พอใช้ได้</span>
+                <span class="badge bg-success">3.5-5.0 พร้อมสอน</span>
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top & Bottom Skills -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-success text-white py-3">
+            <h5 class="mb-0 fw-semibold">
+              <i class="bi bi-trophy-fill me-2"></i>Top 5 ทักษะที่แข็งแกร่งที่สุด
+            </h5>
+            <small>ข้อคำถามที่ได้คะแนนสูงสุด</small>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" id="topSkillsTable">
+                <thead class="table-light">
+                  <tr>
+                    <th width="50">#</th>
+                    <th>คำถาม</th>
+                    <th width="80" class="text-center">คะแนน</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="3" class="text-center text-muted py-4">
+                      <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                      </div>
+                      กำลังโหลดข้อมูล...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-danger text-white py-3">
+            <h5 class="mb-0 fw-semibold">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>Bottom 5 ทักษะที่ต้องพัฒนา
+            </h5>
+            <small>ข้อคำถามที่ได้คะแนนต่ำสุด - จุดที่ต้องเร่งสอนซ่อมเสริม</small>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" id="bottomSkillsTable">
+                <thead class="table-light">
+                  <tr>
+                    <th width="50">#</th>
+                    <th>คำถาม</th>
+                    <th width="80" class="text-center">คะแนน</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="3" class="text-center text-muted py-4">
+                      <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                      </div>
+                      กำลังโหลดข้อมูล...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparative Analysis -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 fw-semibold">
+              <i class="bi bi-building text-primary me-2"></i>เปรียบเทียบตามคณะ
+            </h5>
+            <small class="text-muted">คะแนนเฉลี่ยแยกตามคณะ</small>
+          </div>
+          <div class="card-body">
+            <canvas id="facultyComparisonChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 fw-semibold">
+              <i class="bi bi-calendar3 text-primary me-2"></i>เปรียบเทียบตามชั้นปี
+            </h5>
+            <small class="text-muted">คะแนนเฉลี่ยแยกตามชั้นปี</small>
+          </div>
+          <div class="card-body">
+            <canvas id="yearComparisonChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trend Line (Future Feature) -->
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 fw-semibold">
+              <i class="bi bi-graph-up text-primary me-2"></i>แนวโน้มพัฒนาการ (Pre-test/Post-test)
+            </h5>
+            <small class="text-muted">ติดตามความก้าวหน้าของผู้เรียนตามช่วงเวลา</small>
+          </div>
+          <div class="card-body">
+            <div class="alert alert-secondary border-0 mb-0 text-center" id="trendAlert">
+              <i class="bi bi-calendar-event display-4 d-block mb-3 text-muted"></i>
+              <p class="mb-0">ยังไม่มีข้อมูล Pre-test/Post-test</p>
+              <small class="text-muted">กราฟนี้จะแสดงผลเมื่อมีการทำแบบสอบถามซ้ำในช่วงเวลาต่างกัน</small>
+            </div>
+            <canvas id="trendChart" style="display: none;"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Export Section -->
     <div class="row mb-4">
       <div class="col-12">
@@ -208,8 +391,8 @@
                       <td class="d-none d-lg-table-cell"><%= user.major %></td>
                       <td class="d-none d-lg-table-cell"><%= user.year %></td>
                       <td>
-                        <span class="badge bg-<%= user.role === 'admin' ? 'danger' : user.role === 'teacher' ? 'warning' : 'secondary' %>">
-                          <%= user.role === 'admin' ? 'ผู้ดูแลระบบ' : user.role === 'teacher' ? 'อาจารย์' : 'นักศึกษา' %>
+                        <span class="badge bg-<%= user.role === 'admin' ? 'danger' : user.role === 'teacher' ? 'warning' : user.role === 'person' ? 'info' : 'secondary' %>">
+                          <%= user.role === 'admin' ? 'ผู้ดูแลระบบ' : user.role === 'teacher' ? 'อาจารย์' : user.role === 'person' ? 'บุคคลธรรมดา' : 'นักศึกษา' %>
                         </span>
                       </td>
                       <td>
@@ -317,6 +500,7 @@
                   <option value="student">นักศึกษา</option>
                   <option value="teacher">อาจารย์</option>
                   <option value="admin">ผู้ดูแลระบบ</option>
+                  <option value="person">บุคคลธรรมดา</option>
                 </select>
               </div>
               <div class="col-md-6">

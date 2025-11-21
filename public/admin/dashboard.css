@@ -158,6 +158,67 @@ canvas {
   max-height: 300px;
 }
 
+/* Advanced Analytics Section */
+.alert-info {
+  animation: slideInDown 0.5s ease-out;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Radar Chart Container */
+#radarChart {
+  max-height: 400px !important;
+}
+
+/* Gauge Chart */
+#gaugeChart {
+  max-height: 200px !important;
+}
+
+/* Skills Tables */
+#topSkillsTable tbody tr,
+#bottomSkillsTable tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+#topSkillsTable tbody tr:hover,
+#bottomSkillsTable tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+#topSkillsTable .badge,
+#bottomSkillsTable .badge {
+  font-size: 0.75rem;
+  margin-right: 0.25rem;
+}
+
+/* Comparative Charts */
+#facultyComparisonChart,
+#yearComparisonChart {
+  max-height: 350px !important;
+}
+
+/* Trend Chart */
+#trendChart {
+  max-height: 300px !important;
+}
+
+/* Loading State */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+}
+
 /* Badge Colors */
 .badge {
   font-weight: 500;
