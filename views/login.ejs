@@ -86,48 +86,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Form validation and submission
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            const studentId = document.getElementById('studentId').value.trim();
-            const password = document.getElementById('password').value;
-            
-            // Basic validation
-            if (!studentId || !password) {
-                e.preventDefault();
-                showError('กรุณากรอกรหัสนักศึกษาและรหัสผ่าน');
-                return;
-            }
-            
-            // Hide error message on valid submission
-            hideError();
-        });
-
-        // Show error message
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            const errorText = document.getElementById('errorText');
-            errorText.textContent = message;
-            errorDiv.classList.remove('d-none');
-        }
-
-        // Hide error message
-        function hideError() {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.classList.add('d-none');
-        }
-
-        // Clear error on input
-        document.getElementById('studentId').addEventListener('input', hideError);
-        document.getElementById('password').addEventListener('input', hideError);
-
-        // Google OAuth login (placeholder for backend implementation)
-        document.getElementById('googleLoginBtn').addEventListener('click', function() {
-            // TODO: Implement Google OAuth flow
-            alert('Google OAuth login will be implemented in backend');
-            console.log('Google OAuth login clicked');
-        });
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/login.js"></script>
 </body>
 
 </html>

@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Add active state to current page
   setActiveNavLink();
+
+  // Handle logout buttons
+  initLogoutHandlers();
 });
 
 function initSmoothTransitions() {
@@ -59,6 +62,34 @@ function setActiveNavLink() {
     const href = item.getAttribute('href');
     if (href === currentPath) {
       item.classList.add('active');
+    }
+  });
+}
+
+function initLogoutHandlers() {
+  // Add logout button handler if exists
+  const logoutButtons = document.querySelectorAll('[data-logout], .btn-logout, a[href="/logout"]');
+  logoutButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      handleLogout();
+    });
+  });
+}
+
+function handleLogout() {
+  Swal.fire({
+    title: 'ออกจากระบบ?',
+    text: 'คุณต้องการออกจากระบบใช่หรือไม่?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'ออกจากระบบ',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      window.location.href = '/logout';
     }
   });
 }

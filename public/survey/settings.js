@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
   handlePersonalInfoEdit();
   handlePasswordChange();
   initAnimations();
+  initLogoutHandlers();
 });
 
 // Initialize password visibility toggles
@@ -71,15 +72,24 @@ function handlePersonalInfoEdit() {
     const newLastName = lastName.value.trim();
     
     if (!newFirstName || !newLastName) {
-      showAlert('กรุณากรอกชื่อและนามสกุล', 'danger');
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+        text: 'กรุณากรอกชื่อและนามสกุล',
+        confirmButtonText: 'ตกลง'
+      });
       return;
     }
     
     // Show loading
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>กำลังบันทึก...';
+    Swal.fire({
+      title: 'กำลังบันทึกข้อมูล...',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
     
     // Simulate API call
     setTimeout(() => {
@@ -91,10 +101,12 @@ function handlePersonalInfoEdit() {
       actions.classList.add('d-none');
       editBtn.style.display = 'block';
       
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = originalText;
-      
-      showAlert('บันทึกข้อมูลสำเร็จ', 'success');
+      Swal.fire({
+        icon: 'success',
+        title: 'บันทึกข้อมูลสำเร็จ',
+        timer: 2000,
+        showConfirmButton: false
+      });
       
       // Log to console (in production, send to backend)
       console.log('Personal info updated:', { firstName: newFirstName, lastName: newLastName });
@@ -118,30 +130,53 @@ function handlePasswordChange() {
     
     // Validation
     if (!currentPwd || !newPwd || !confirmPwd) {
-      showAlert('กรุณากรอกข้อมูลให้ครบถ้วน', 'danger');
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+        confirmButtonText: 'ตกลง'
+      });
       return;
     }
     
     if (newPwd.length < 6) {
-      showAlert('รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร', 'danger');
+      Swal.fire({
+        icon: 'warning',
+        title: 'รหัสผ่านไม่ถูกต้อง',
+        text: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร',
+        confirmButtonText: 'ตกลง'
+      });
       return;
     }
     
     if (newPwd !== confirmPwd) {
-      showAlert('รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน', 'danger');
+      Swal.fire({
+        icon: 'error',
+        title: 'รหัสผ่านไม่ตรงกัน',
+        text: 'รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน',
+        confirmButtonText: 'ตกลง'
+      });
       return;
     }
     
     if (currentPwd === newPwd) {
-      showAlert('รหัสผ่านใหม่ต้องไม่เหมือนกับรหัสผ่านเดิม', 'danger');
+      Swal.fire({
+        icon: 'warning',
+        title: 'รหัสผ่านเหมือนเดิม',
+        text: 'รหัสผ่านใหม่ต้องไม่เหมือนกับรหัสผ่านเดิม',
+        confirmButtonText: 'ตกลง'
+      });
       return;
     }
     
     // Show loading
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>กำลังเปลี่ยนรหัสผ่าน...';
+    Swal.fire({
+      title: 'กำลังเปลี่ยนรหัสผ่าน...',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
     
     // Simulate API call
     setTimeout(() => {
@@ -149,18 +184,24 @@ function handlePasswordChange() {
       const isCurrentPasswordCorrect = true; // Mock
       
       if (!isCurrentPasswordCorrect) {
-        showAlert('รหัสผ่านปัจจุบันไม่ถูกต้อง', 'danger');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+        Swal.fire({
+          icon: 'error',
+          title: 'รหัสผ่านไม่ถูกต้อง',
+          text: 'รหัสผ่านปัจจุบันไม่ถูกต้อง',
+          confirmButtonText: 'ตกลง'
+        });
         return;
       }
       
       // Success
       form.reset();
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = originalText;
       
-      showAlert('เปลี่ยนรหัสผ่านสำเร็จ', 'success');
+      Swal.fire({
+        icon: 'success',
+        title: 'เปลี่ยนรหัสผ่านสำเร็จ',
+        text: 'รหัสผ่านของคุณได้รับการเปลี่ยนแปลงเรียบร้อยแล้ว',
+        confirmButtonText: 'ตกลง'
+      });
       
       // Log to console (in production, send to backend)
       console.log('Password changed successfully');
@@ -168,33 +209,33 @@ function handlePasswordChange() {
   });
 }
 
-// Show alert message
-function showAlert(message, type) {
-  const container = document.getElementById('alertContainer');
-  
-  const icon = type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill';
-  
-  const alert = document.createElement('div');
-  alert.className = `alert alert-${type}`;
-  alert.innerHTML = `
-    <i class="bi bi-${icon}"></i>
-    <span>${message}</span>
-  `;
-  
-  container.innerHTML = '';
-  container.appendChild(alert);
-  
-  // Scroll to alert
-  container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  
-  // Auto dismiss after 5 seconds
-  setTimeout(() => {
-    alert.style.transition = 'opacity 0.3s';
-    alert.style.opacity = '0';
-    setTimeout(() => {
-      alert.remove();
-    }, 300);
-  }, 5000);
+// Initialize logout handlers
+function initLogoutHandlers() {
+  const logoutButtons = document.querySelectorAll('[data-logout], .btn-logout, a[href="/logout"]');
+  logoutButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      handleLogout();
+    });
+  });
+}
+
+// Handle logout
+function handleLogout() {
+  Swal.fire({
+    title: 'ออกจากระบบ?',
+    text: 'คุณต้องการออกจากระบบใช่หรือไม่?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'ออกจากระบบ',
+    cancelButtonText: 'ยกเลิก',
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      window.location.href = '/logout';
+    }
+  });
 }
 
 // Initialize animations

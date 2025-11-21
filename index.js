@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const admin = require('firebase-admin');
 const bcrypt = require('bcrypt');
+const session = require('express-session');
 
 // Initialize Firebase
 try {
@@ -37,6 +38,25 @@ app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// Session configuration
+app.use(session({
+  secret: 'kru-nsru-secret-key-2025',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // set to true if using HTTPS
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Middleware to check if user is logged in
+function requireLogin(req, res, next) {
+  if (!req.session.userId) {
+    return res.redirect('/login');
+  }
+  next();
+}
 
 app.get('/', (req, res) => {
   res.render('login', {
@@ -90,14 +110,26 @@ app.post('/login', async (req, res) => {
       });
     }
 
-    // Login successful
+    // Login successful - Store user data in session
+    req.session.userId = studentId;
+    req.session.userData = {
+      studentId: userData.studentId,
+      prefix: userData.prefix,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      email: userData.email,
+      phone: userData.phone,
+      age: userData.age,
+      birthdate: userData.birthdate,
+      role: userData.role
+    };
+
     console.log('User logged in:', { studentId, rememberMe, timestamp: new Date().toISOString() });
 
-    // In a real app, you would set session/JWT here
     res.json({
       success: true,
       message: `เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${userData.firstName} ${userData.lastName}`,
-      redirectUrl: '/survey/home', // Redirect to survey home
+      redirectUrl: '/survey/home',
       user: {
         studentId: userData.studentId,
         name: `${userData.prefix}${userData.firstName} ${userData.lastName}`
@@ -307,24 +339,46 @@ app.post('/forgot-password/reset-password', (req, res) => {
 });
 
 // Survey routes
-app.get('/survey/home', (req, res) => {
-  // In production, get user data from session/JWT
-  const mockUser = {
-    studentId: '6510000000',
-    name: 'นาย ทดสอบ ระบบ',
-    faculty: 'คณะวิทยาศาสตร์',
-    major: 'วิทยาการคอมพิวเตอร์',
-    year: '4',
-    email: 'student@example.com'
-  };
+app.get('/survey/home', requireLogin, async (req, res) => {
+  try {
+    // Get user data from session
+    const userId = req.session.userId;
+    const sessionData = req.session.userData;
 
-  res.render('survey/home', {
-    title: 'หน้าหลัก',
-    user: mockUser
-  });
+    // Get additional user data from Firestore if needed
+    const userRef = db.collection('users').doc(userId);
+    const doc = await userRef.get();
+
+    let userData = sessionData;
+    if (doc.exists) {
+      const dbData = doc.data();
+      userData = {
+        studentId: dbData.studentId,
+        name: `${dbData.prefix}${dbData.firstName} ${dbData.lastName}`,
+        prefix: dbData.prefix,
+        firstName: dbData.firstName,
+        lastName: dbData.lastName,
+        email: dbData.email,
+        phone: dbData.phone,
+        age: dbData.age,
+        birthdate: dbData.birthdate,
+        faculty: dbData.faculty || 'ยังไม่ระบุ',
+        major: dbData.major || 'ยังไม่ระบุ',
+        year: dbData.year || 'ยังไม่ระบุ'
+      };
+    }
+
+    res.render('survey/home', {
+      title: 'หน้าหลัก',
+      user: userData
+    });
+  } catch (error) {
+    console.error('Error loading home page:', error);
+    res.status(500).send('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+  }
 });
 
-app.get('/survey/questionnaire', (req, res) => {
+app.get('/survey/questionnaire', requireLogin, (req, res) => {
   const fs = require('fs');
   const surveys = [];
 
@@ -363,25 +417,53 @@ app.get('/survey/questionnaire', (req, res) => {
   });
 });
 
-app.get('/survey/settings', (req, res) => {
-  // In production, get user data from session/JWT
-  const mockUser = {
-    studentId: '6510000000',
-    name: 'นาย ทดสอบ ระบบ',
-    faculty: 'คณะวิทยาศาสตร์',
-    major: 'วิทยาการคอมพิวเตอร์',
-    year: '4',
-    email: 'student@example.com'
-  };
-
-  res.render('survey/settings', {
-    title: 'ตั้งค่า',
-    user: mockUser
+// Logout route
+app.get('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout error:', err);
+    }
+    res.redirect('/login');
   });
 });
 
+app.get('/survey/settings', requireLogin, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    const userRef = db.collection('users').doc(userId);
+    const doc = await userRef.get();
+
+    let userData = req.session.userData;
+    if (doc.exists) {
+      const dbData = doc.data();
+      userData = {
+        studentId: dbData.studentId,
+        name: `${dbData.prefix}${dbData.firstName} ${dbData.lastName}`,
+        prefix: dbData.prefix,
+        firstName: dbData.firstName,
+        lastName: dbData.lastName,
+        email: dbData.email,
+        phone: dbData.phone,
+        age: dbData.age,
+        birthdate: dbData.birthdate,
+        faculty: dbData.faculty || 'ยังไม่ระบุ',
+        major: dbData.major || 'ยังไม่ระบุ',
+        year: dbData.year || 'ยังไม่ระบุ'
+      };
+    }
+
+    res.render('survey/settings', {
+      title: 'ตั้งค่า',
+      user: userData
+    });
+  } catch (error) {
+    console.error('Error loading settings page:', error);
+    res.status(500).send('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+  }
+});
+
 // Survey form route
-app.get('/survey/form/:id', (req, res) => {
+app.get('/survey/form/:id', requireLogin, (req, res) => {
   const surveyId = req.params.id;
   const fs = require('fs');
 
@@ -412,7 +494,7 @@ app.get('/survey/form/:id', (req, res) => {
 });
 
 // Submit survey endpoint
-app.post('/survey/submit/:id', (req, res) => {
+app.post('/survey/submit/:id', requireLogin, (req, res) => {
   const surveyId = req.params.id;
   const answers = req.body;
 
@@ -426,7 +508,7 @@ app.post('/survey/submit/:id', (req, res) => {
 });
 
 // Update personal info endpoint
-app.post('/survey/update-personal-info', (req, res) => {
+app.post('/survey/update-personal-info', requireLogin, async (req, res) => {
   const { firstName, lastName } = req.body;
 
   if (!firstName || !lastName) {
@@ -446,7 +528,7 @@ app.post('/survey/update-personal-info', (req, res) => {
 });
 
 // Change password endpoint
-app.post('/survey/change-password', (req, res) => {
+app.post('/survey/change-password', requireLogin, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {

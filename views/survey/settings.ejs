@@ -69,14 +69,14 @@
                     <!-- First Name (Editable) -->
                     <div class="col-12 col-md-6">
                       <label class="form-label required">ชื่อจริง</label>
-                      <input type="text" class="form-control" id="firstName" name="firstName" value="ทดสอบ" disabled
+                      <input type="text" class="form-control" id="firstName" name="firstName" value="<%= user?.firstName || '' %>" disabled
                         required>
                     </div>
 
                     <!-- Last Name (Editable) -->
                     <div class="col-12 col-md-6">
                       <label class="form-label required">นามสกุล</label>
-                      <input type="text" class="form-control" id="lastName" name="lastName" value="ระบบ" disabled
+                      <input type="text" class="form-control" id="lastName" name="lastName" value="<%= user?.lastName || '' %>" disabled
                         required>
                     </div>
 
@@ -223,6 +223,7 @@
       </footer>
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
       <script src="/survey/home.js"></script>
       <script src="/survey/settings.js"></script>
 </body>
