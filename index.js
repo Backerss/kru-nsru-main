@@ -45,38 +45,38 @@ app.get('/login', (req, res) => {
 
 app.post('/login', (req, res) => {
   const { studentId, password, rememberMe } = req.body;
-  
+
   // Basic validation
   if (!studentId || !password) {
-    return res.status(400).json({ 
-      error: 'กรุณากรอกรหัสนักศึกษาและรหัสผ่าน' 
+    return res.status(400).json({
+      error: 'กรุณากรอกรหัสนักศึกษาและรหัสผ่าน'
     });
   }
-  
+
   // Here you would typically check against database
   // For demo purposes, we'll use simple validation
-  
+
   // Mock user database (in real app, this would be from database)
   const mockUsers = [
     { studentId: '1234567890', password: 'password123', name: 'นาย ทดสอบ ระบบ' },
     { studentId: 'admin', password: 'admin123', name: 'ผู้ดูแลระบบ' }
   ];
-  
+
   // Find user
   const user = mockUsers.find(u => u.studentId === studentId && u.password === password);
-  
+
   if (!user) {
-    return res.status(401).json({ 
-      error: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง' 
+    return res.status(401).json({
+      error: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง'
     });
   }
-  
+
   // Login successful
   console.log('User logged in:', { studentId, rememberMe, timestamp: new Date().toISOString() });
-  
+
   // In a real app, you would set session/JWT here
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: `เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${user.name}`,
     redirectUrl: '/',
     user: {
@@ -87,45 +87,45 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/register', (req, res) => {
-  const { 
-    studentId, 
-    prefix, 
-    firstName, 
-    lastName, 
-    birthdate, 
-    age, 
-    email, 
-    phone, 
-    password, 
-    confirmPassword, 
-    agreePolicy 
+  const {
+    studentId,
+    prefix,
+    firstName,
+    lastName,
+    birthdate,
+    age,
+    email,
+    phone,
+    password,
+    confirmPassword,
+    agreePolicy
   } = req.body;
-  
+
   // Basic validation
   if (password !== confirmPassword) {
     return res.status(400).json({ error: 'รหัสผ่านไม่ตรงกัน' });
   }
-  
+
   if (!agreePolicy) {
     return res.status(400).json({ error: 'กรุณายอมรับนโยบายและเงื่อนไขการใช้งาน' });
   }
-  
+
   if (password.length < 6) {
     return res.status(400).json({ error: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' });
   }
-  
+
   // Email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ error: 'รูปแบบอีเมลไม่ถูกต้อง' });
   }
-  
+
   // Phone validation (basic Thai phone number)
   const phoneRegex = /^[0-9]{9,10}$/;
   if (!phoneRegex.test(phone.replace(/[-\s]/g, ''))) {
     return res.status(400).json({ error: 'รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง' });
   }
-  
+
   // Here you would typically save to database
   const userData = {
     studentId,
@@ -138,12 +138,12 @@ app.post('/register', (req, res) => {
     phone,
     createdAt: new Date().toISOString()
   };
-  
+
   console.log('New registration:', userData);
-  
+
   // Send success response
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'สมัครสมาชิกสำเร็จแล้ว!',
     redirectUrl: '/login'
   });
@@ -274,8 +274,41 @@ app.get('/survey/home', (req, res) => {
 });
 
 app.get('/survey/questionnaire', (req, res) => {
+  const fs = require('fs');
+  const surveys = [];
+
+  try {
+    // Read all JSON files from data/surveys directory
+    const surveyDir = path.join(__dirname, 'data', 'surveys');
+
+    if (fs.existsSync(surveyDir)) {
+      const files = fs.readdirSync(surveyDir);
+
+      files.forEach(file => {
+        if (file.endsWith('.json')) {
+          try {
+            const surveyPath = path.join(surveyDir, file);
+            const surveyData = JSON.parse(fs.readFileSync(surveyPath, 'utf8'));
+
+            // Add the survey ID from filename if not present
+            if (!surveyData.id) {
+              surveyData.id = file.replace('.json', '');
+            }
+
+            surveys.push(surveyData);
+          } catch (error) {
+            console.error(`Error loading survey ${file}:`, error);
+          }
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error reading surveys directory:', error);
+  }
+
   res.render('survey/questionnaire', {
-    title: 'แบบสอบถาม'
+    title: 'แบบสอบถาม',
+    surveys: surveys
   });
 });
 
@@ -299,98 +332,92 @@ app.get('/survey/settings', (req, res) => {
 // Survey form route
 app.get('/survey/form/:id', (req, res) => {
   const surveyId = req.params.id;
-  
-  // Mock survey data based on ID
-  const surveys = {
-    '1': {
-      title: 'แบบสอบถามความพึงพอใจการเรียนการสอน',
-      description: 'แบบสอบถามเพื่อประเมินความพึงพอใจต่อการเรียนการสอนในภาคเรียนที่ผ่านมา',
-      icon: 'mortarboard',
-      questionCount: 7,
-      duration: 5
-    },
-    '2': {
-      title: 'แบบสอบถามความพึงพอใจสิ่งอำนวยความสะดวก',
-      description: 'ประเมินความพึงพอใจต่อสิ่งอำนวยความสะดวกภายในมหาวิทยาลัย',
-      icon: 'building',
-      questionCount: 7,
-      duration: 4
-    },
-    '3': {
-      title: 'แบบสอบถามความพึงพอใจห้องสมุด',
-      description: 'ประเมินความพึงพอใจการให้บริการและทรัพยากรของห้องสมุด',
-      icon: 'book',
-      questionCount: 7,
-      duration: 3
+  const fs = require('fs');
+
+  try {
+    // Try to load survey data from JSON file
+    const surveyPath = path.join(__dirname, 'data', 'surveys', `${surveyId}.json`);
+
+    if (fs.existsSync(surveyPath)) {
+      const surveyData = JSON.parse(fs.readFileSync(surveyPath, 'utf8'));
+
+      res.render('survey/form', {
+        title: surveyData.title,
+        survey: surveyData
+      });
+    } else {
+      // Fallback to mock data for old surveys
+      const survey = surveys[surveyId] || surveys['1'];
+
+      res.render('survey/form', {
+        title: survey.title,
+        survey: survey
+      });
     }
-  };
-
-  const survey = surveys[surveyId] || surveys['1'];
-
-  res.render('survey/form', {
-    title: survey.title,
-    survey: survey
-  });
+  } catch (error) {
+    console.error('Error loading survey:', error);
+    res.status(500).send('เกิดข้อผิดพลาดในการโหลดแบบสอบถาม');
+  }
 });
 
 // Submit survey endpoint
 app.post('/survey/submit/:id', (req, res) => {
   const surveyId = req.params.id;
   const answers = req.body;
-  
+
   // In production, save to database
   console.log('Survey submission:', { surveyId, answers });
-  
-  res.json({ 
-    success: true, 
-    message: 'ส่งแบบสอบถามสำเร็จ' 
+
+  res.json({
+    success: true,
+    message: 'ส่งแบบสอบถามสำเร็จ'
   });
 });
 
 // Update personal info endpoint
 app.post('/survey/update-personal-info', (req, res) => {
   const { firstName, lastName } = req.body;
-  
+
   if (!firstName || !lastName) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'กรุณากรอกข้อมูลให้ครบถ้วน' 
+    return res.status(400).json({
+      success: false,
+      message: 'กรุณากรอกข้อมูลให้ครบถ้วน'
     });
   }
-  
+
   // In production, update database
   console.log('Personal info update:', { firstName, lastName });
-  
-  res.json({ 
-    success: true, 
-    message: 'บันทึกข้อมูลสำเร็จ' 
+
+  res.json({
+    success: true,
+    message: 'บันทึกข้อมูลสำเร็จ'
   });
 });
 
 // Change password endpoint
 app.post('/survey/change-password', (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  
+
   if (!currentPassword || !newPassword) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'กรุณากรอกข้อมูลให้ครบถ้วน' 
+    return res.status(400).json({
+      success: false,
+      message: 'กรุณากรอกข้อมูลให้ครบถ้วน'
     });
   }
-  
+
   if (newPassword.length < 6) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' 
+    return res.status(400).json({
+      success: false,
+      message: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'
     });
   }
-  
+
   // In production, verify current password and update
   console.log('Password change request');
-  
-  res.json({ 
-    success: true, 
-    message: 'เปลี่ยนรหัสผ่านสำเร็จ' 
+
+  res.json({
+    success: true,
+    message: 'เปลี่ยนรหัสผ่านสำเร็จ'
   });
 });
 

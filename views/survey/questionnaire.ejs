@@ -1,212 +1,125 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title || 'แบบสอบถาม' %></title>
+  <title>
+    <%= title || 'แบบสอบถาม' %>
+  </title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/colors.css">
   <link rel="stylesheet" href="/survey/home.css">
   <link rel="stylesheet" href="/survey/questionnaire.css">
 </head>
+
 <body>
-  <!-- Desktop Navigation -->
-  <nav class="navbar navbar-light bg-white border-bottom sticky-top desktop-navbar">
-    <div class="container-fluid px-3 px-md-4">
-      <a class="navbar-brand fw-bold text-primary" href="/survey/home">
-        <i class="bi bi-mortarboard-fill me-2"></i>ระบบแบบสอบถาม
-      </a>
-      <ul class="navbar-nav flex-row gap-3">
-        <li class="nav-item">
-          <a class="nav-link" href="/survey/home">
-            <i class="bi bi-house-door me-1"></i>หน้าหลัก
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link active" href="/survey/questionnaire">
-            <i class="bi bi-clipboard-check me-1"></i>แบบสอบถาม
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/survey/settings">
-            <i class="bi bi-gear me-1"></i>ตั้งค่า
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-muted" href="/login">
-            <i class="bi bi-box-arrow-right me-1"></i>ออกจากระบบ
-          </a>
-        </li>
-      </ul>
-    </div>
-  </nav>
+  <%- include('partials/desktop-nav', { currentPage: 'questionnaire' }) %>
 
-  <!-- Mobile Bottom Navigation -->
-  <nav class="mobile-bottom-nav">
-    <a href="/survey/home" class="mobile-nav-item">
-      <i class="bi bi-house-door"></i>
-      <span>หน้าหลัก</span>
-    </a>
-    <a href="/survey/questionnaire" class="mobile-nav-item active">
-      <i class="bi bi-clipboard-check-fill"></i>
-      <span>แบบสอบถาม</span>
-    </a>
-    <a href="/survey/settings" class="mobile-nav-item">
-      <i class="bi bi-gear"></i>
-      <span>ตั้งค่า</span>
-    </a>
-    <a href="/login" class="mobile-nav-item">
-      <i class="bi bi-box-arrow-right"></i>
-      <span>ออกจากระบบ</span>
-    </a>
-  </nav>
+    <%- include('partials/mobile-nav', { currentPage: 'questionnaire' }) %>
 
-  <!-- Main Content -->
-  <main class="container py-4 py-md-5">
-    <!-- Header Section -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="page-header">
-          <h1 class="page-title">
-            <i class="bi bi-clipboard-check text-primary me-2"></i>แบบสอบถาม
-          </h1>
-          <p class="page-subtitle text-muted mb-0">เลือกแบบสอบถามที่ต้องการตอบ</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Survey Cards -->
-    <div class="row g-4">
-      <!-- Survey Card 1 -->
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="survey-card" data-survey-id="1">
-          <div class="survey-card-header">
-            <div class="survey-icon bg-primary">
-              <i class="bi bi-mortarboard"></i>
+      <!-- Main Content -->
+      <main class="container py-4 py-md-5">
+        <!-- Header Section -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="page-header">
+              <h1 class="page-title">
+                <i class="bi bi-clipboard-check text-primary me-2"></i>แบบสอบถาม
+              </h1>
+              <p class="page-subtitle text-muted mb-0">เลือกแบบสอบถามที่ต้องการตอบ</p>
             </div>
-            <span class="survey-badge badge-active">เปิดรับคำตอบ</span>
-          </div>
-          <div class="survey-card-body">
-            <h5 class="survey-title">แบบสอบถามความพึงพอใจการเรียนการสอน</h5>
-            <p class="survey-description">
-              แบบสอบถามเพื่อประเมินความพึงพอใจต่อการเรียนการสอนในภาคเรียนที่ผ่านมา
-            </p>
-            <div class="survey-meta">
-              <div class="meta-item">
-                <i class="bi bi-question-circle me-1"></i>
-                <span>15 คำถาม</span>
-              </div>
-              <div class="meta-item">
-                <i class="bi bi-clock me-1"></i>
-                <span>ใช้เวลา ~5 นาที</span>
-              </div>
-            </div>
-          </div>
-          <div class="survey-card-footer">
-            <a href="/survey/form/1" class="btn btn-primary w-100">
-              <i class="bi bi-pencil-square me-2"></i>เริ่มทำแบบสอบถาม
-            </a>
           </div>
         </div>
-      </div>
 
-      <!-- Survey Card 2 -->
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="survey-card" data-survey-id="2">
-          <div class="survey-card-header">
-            <div class="survey-icon" style="background: #10b981;">
-              <i class="bi bi-building"></i>
-            </div>
-            <span class="survey-badge badge-active">เปิดรับคำตอบ</span>
-          </div>
-          <div class="survey-card-body">
-            <h5 class="survey-title">แบบสอบถามความพึงพอใจสิ่งอำนวยความสะดวก</h5>
-            <p class="survey-description">
-              ประเมินความพึงพอใจต่อสิ่งอำนวยความสะดวกภายในมหาวิทยาลัย
-            </p>
-            <div class="survey-meta">
-              <div class="meta-item">
-                <i class="bi bi-question-circle me-1"></i>
-                <span>12 คำถาม</span>
+        <!-- Survey Cards -->
+        <div class="row g-4">
+          <% if (surveys && surveys.length> 0) { %>
+            <% const iconColors=['#3b82f6', '#10b981' , '#f59e0b' , '#8b5cf6' , '#ef4444' , '#06b6d4' ];
+              surveys.forEach((survey, index)=> {
+              const iconColor = iconColors[index % iconColors.length];
+              const statusBadge = survey.status === 'completed' ? 'badge-completed' : 'badge-available';
+              const statusText = survey.status === 'completed' ? 'ตอบแล้ว' : 'ว่าง';
+              const isCompleted = survey.status === 'completed';
+              %>
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="survey-card" data-survey-id="<%= survey.id %>">
+                  <div class="survey-card-header">
+                    <div class="survey-icon" style="background: <%= iconColor %>;">
+                      <i class="bi bi-<%= survey.icon || 'clipboard-check' %>"></i>
+                    </div>
+                    <span class="survey-badge <%= statusBadge %>">
+                      <%= statusText %>
+                    </span>
+                  </div>
+                  <div class="survey-card-body">
+                    <h5 class="survey-title">
+                      <%= survey.title %>
+                    </h5>
+                    <p class="survey-description">
+                      <%= survey.description %>
+                    </p>
+                    <div class="survey-meta">
+                      <div class="meta-item">
+                        <i class="bi bi-question-circle me-1"></i>
+                        <span>
+                          <%= survey.questionCount || (survey.questions ? survey.questions.length : 0) %> คำถาม
+                        </span>
+                      </div>
+                      <div class="meta-item">
+                        <i class="bi bi-clock me-1"></i>
+                        <span>ใช้เวลา ~<%= survey.duration || '5' %> นาที</span>
+                      </div>
+                    </div>
+                    <% if (isCompleted && survey.completedDate) { %>
+                      <div class="completed-info">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        <span>ตอบเมื่อ <%= survey.completedDate %></span>
+                      </div>
+                      <% } %>
+                  </div>
+                  <div class="survey-card-footer">
+                    <% if (isCompleted) { %>
+                      <button class="btn btn-outline-primary w-100" disabled>
+                        <i class="bi bi-check-circle me-2"></i>ตอบแล้ว
+                      </button>
+                      <% } else { %>
+                        <a href="/survey/form/<%= survey.id %>" class="btn btn-primary w-100">
+                          <i class="bi bi-pencil-square me-2"></i>เริ่มทำแบบสอบถาม
+                        </a>
+                        <% } %>
+                  </div>
+                </div>
               </div>
-              <div class="meta-item">
-                <i class="bi bi-clock me-1"></i>
-                <span>ใช้เวลา ~4 นาที</span>
-              </div>
+              <% }); %>
+                <% } else { %>
+                  <!-- Empty State -->
+                  <div class="col-12">
+                    <div class="empty-state">
+                      <i class="bi bi-clipboard-x"></i>
+                      <h5>ไม่มีแบบสอบถาม</h5>
+                      <p class="text-muted">ขณะนี้ยังไม่มีแบบสอบถามที่เปิดให้ทำ</p>
+                    </div>
+                  </div>
+                  <% } %>
+        </div>
+      </main>
+
+      <!-- Footer -->
+      <footer class="mt-auto py-4 border-top bg-white">
+        <div class="container">
+          <div class="row">
+            <div class="col-12 text-center">
+              <p class="text-muted mb-0 small">© 2025 ระบบแบบสอบถามออนไลน์ - สงวนลิขสิทธิ์</p>
             </div>
-          </div>
-          <div class="survey-card-footer">
-            <a href="/survey/form/2" class="btn btn-primary w-100">
-              <i class="bi bi-pencil-square me-2"></i>เริ่มทำแบบสอบถาม
-            </a>
           </div>
         </div>
-      </div>
+      </footer>
 
-      <!-- Survey Card 3 -->
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="survey-card" data-survey-id="3">
-          <div class="survey-card-header">
-            <div class="survey-icon" style="background: #f59e0b;">
-              <i class="bi bi-book"></i>
-            </div>
-            <span class="survey-badge badge-completed">ตอบแล้ว</span>
-          </div>
-          <div class="survey-card-body">
-            <h5 class="survey-title">แบบสอบถามความพึงพอใจห้องสมุด</h5>
-            <p class="survey-description">
-              ประเมินความพึงพอใจการให้บริการและทรัพยากรของห้องสมุด
-            </p>
-            <div class="survey-meta">
-              <div class="meta-item">
-                <i class="bi bi-question-circle me-1"></i>
-                <span>10 คำถาม</span>
-              </div>
-              <div class="meta-item">
-                <i class="bi bi-clock me-1"></i>
-                <span>ใช้เวลา ~3 นาที</span>
-              </div>
-            </div>
-            <div class="completed-info">
-              <i class="bi bi-check-circle-fill text-success me-2"></i>
-              <span>ตอบเมื่อ 15 พ.ย. 2568</span>
-            </div>
-          </div>
-          <div class="survey-card-footer">
-            <button class="btn btn-outline-primary w-100" disabled>
-              <i class="bi bi-check-circle me-2"></i>ตอบแล้ว
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Empty State (Hidden by default) -->
-    <div class="row d-none" id="emptyState">
-      <div class="col-12">
-        <div class="empty-state">
-          <i class="bi bi-clipboard-x"></i>
-          <h5>ไม่มีแบบสอบถาม</h5>
-          <p class="text-muted">ขณะนี้ยังไม่มีแบบสอบถามที่เปิดให้ทำ</p>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <!-- Footer -->
-  <footer class="mt-auto py-4 border-top bg-white">
-    <div class="container">
-      <div class="row">
-        <div class="col-12 text-center">
-          <p class="text-muted mb-0 small">© 2025 ระบบแบบสอบถามออนไลน์ - สงวนลิขสิทธิ์</p>
-        </div>
-      </div>
-    </div>
-  </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/survey/home.js"></script>
-  <script src="/survey/questionnaire.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+      <script src="/survey/home.js"></script>
+      <script src="/survey/questionnaire.js"></script>
 </body>
+
 </html>
