@@ -47,10 +47,30 @@ router.get('/home', async (req, res) => {
       };
     }
 
+    // Get survey completion stats
+    const responsesSnapshot = await db.collection('survey_responses')
+      .where('userId', '==', userId)
+      .get();
+    
+    const completedCount = responsesSnapshot.size;
+    
+    // Count total surveys
+    const surveyDir = path.join(__dirname, '..', 'data', 'surveys');
+    let totalSurveys = 0;
+    if (fs.existsSync(surveyDir)) {
+      const files = fs.readdirSync(surveyDir);
+      totalSurveys = files.filter(f => f.endsWith('.json')).length;
+    }
+
     res.render('survey/home', {
       title: 'หน้าหลัก',
       user: { ...userData, role: userRole },
-      currentPage: 'home'
+      currentPage: 'home',
+      stats: {
+        completed: completedCount,
+        total: totalSurveys,
+        remaining: totalSurveys - completedCount
+      }
     });
   } catch (error) {
     console.error('Error loading home page:', error);
@@ -59,10 +79,27 @@ router.get('/home', async (req, res) => {
 });
 
 // Questionnaire list page
-router.get('/questionnaire', (req, res) => {
+router.get('/questionnaire', async (req, res) => {
   const surveys = [];
+  const userId = req.session.userId;
 
   try {
+    const db = req.app.get('db');
+    
+    // Get user's completed surveys
+    const responsesSnapshot = await db.collection('survey_responses')
+      .where('userId', '==', userId)
+      .get();
+    
+    const completedSurveys = new Map();
+    responsesSnapshot.forEach(doc => {
+      const data = doc.data();
+      completedSurveys.set(data.surveyId, {
+        submittedAt: data.submittedAt,
+        id: doc.id
+      });
+    });
+
     // Read all JSON files from data/surveys directory
     const surveyDir = path.join(__dirname, '..', 'data', 'surveys');
 
@@ -80,6 +117,24 @@ router.get('/questionnaire', (req, res) => {
               surveyData.id = file.replace('.json', '');
             }
 
+            // Check if user completed this survey
+            if (completedSurveys.has(surveyData.id)) {
+              const completion = completedSurveys.get(surveyData.id);
+              surveyData.status = 'completed';
+              
+              // Format date for display
+              const date = new Date(completion.submittedAt);
+              surveyData.completedDate = date.toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+            } else {
+              surveyData.status = 'available';
+            }
+
             surveys.push(surveyData);
           } catch (error) {
             console.error(`Error loading survey ${file}:`, error);
@@ -87,16 +142,38 @@ router.get('/questionnaire', (req, res) => {
         }
       });
     }
+
+    // Get user data for navigation
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    
+    let userData = req.session.userData;
+    let userRole = 'student';
+    
+    if (userDoc.exists) {
+      const dbData = userDoc.data();
+      userRole = dbData.role || 'student';
+      userData = {
+        ...userData,
+        role: userRole
+      };
+    }
+
+    res.render('survey/questionnaire', {
+      title: 'แบบสอบถาม',
+      surveys: surveys,
+      user: userData,
+      currentPage: 'questionnaire'
+    });
   } catch (error) {
     console.error('Error reading surveys directory:', error);
+    res.render('survey/questionnaire', {
+      title: 'แบบสอบถาม',
+      surveys: surveys,
+      user: req.session.userData,
+      currentPage: 'questionnaire'
+    });
   }
-
-  res.render('survey/questionnaire', {
-    title: 'แบบสอบถาม',
-    surveys: surveys,
-    user: req.session.userData,
-    currentPage: 'questionnaire'
-  });
 });
 
 // Settings page
@@ -141,20 +218,65 @@ router.get('/settings', async (req, res) => {
 });
 
 // Survey form page
-router.get('/form/:id', (req, res) => {
+router.get('/form/:id', async (req, res) => {
   const surveyId = req.params.id;
+  const userId = req.session.userId;
 
   try {
+    // Check if user already submitted this survey
+    const db = req.app.get('db');
+    const existingResponse = await db.collection('survey_responses')
+      .where('surveyId', '==', surveyId)
+      .where('userId', '==', userId)
+      .limit(1)
+      .get();
+
+    if (!existingResponse.empty) {
+      // User already submitted, redirect with message
+      req.session.surveyMessage = {
+        type: 'warning',
+        text: 'คุณได้ทำแบบสอบถามนี้ไปแล้ว'
+      };
+      return res.redirect('/survey/questionnaire');
+    }
+
     // Try to load survey data from JSON file
     const surveyPath = path.join(__dirname, '..', 'data', 'surveys', `${surveyId}.json`);
 
     if (fs.existsSync(surveyPath)) {
       const surveyData = JSON.parse(fs.readFileSync(surveyPath, 'utf8'));
 
+      // Get user data for the form
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await userRef.get();
+      
+      let userData = req.session.userData;
+      let userRole = 'student';
+      
+      if (userDoc.exists) {
+        const dbData = userDoc.data();
+        userRole = dbData.role || 'student';
+        userData = {
+          studentId: dbData.studentId,
+          name: `${dbData.prefix}${dbData.firstName} ${dbData.lastName}`,
+          prefix: dbData.prefix,
+          firstName: dbData.firstName,
+          lastName: dbData.lastName,
+          email: dbData.email,
+          phone: dbData.phone,
+          age: dbData.age,
+          birthdate: dbData.birthdate,
+          faculty: dbData.faculty || 'ยังไม่ระบุ',
+          major: dbData.major || 'ยังไม่ระบุ',
+          year: dbData.year || 'ยังไม่ระบุ',
+          role: userRole
+        };
+      }
+
       res.render('survey/form', {
         title: surveyData.title,
         survey: surveyData,
-        user: req.session.userData,
+        user: userData,
         currentPage: 'questionnaire'
       });
     } else {
@@ -175,17 +297,53 @@ router.post('/submit/:id', async (req, res) => {
   try {
     const db = req.app.get('db');
     
-    // Save survey response to Firestore
+    // Check if user already submitted this survey
+    const existingResponse = await db.collection('survey_responses')
+      .where('surveyId', '==', surveyId)
+      .where('userId', '==', userId)
+      .limit(1)
+      .get();
+
+    if (!existingResponse.empty) {
+      return res.status(400).json({
+        success: false,
+        message: 'คุณได้ทำแบบสอบถามนี้ไปแล้ว'
+      });
+    }
+
+    // Get user demographic data for analysis
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    
+    let userDemographics = {};
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      userDemographics = {
+        faculty: userData.faculty || 'ไม่ระบุ',
+        major: userData.major || 'ไม่ระบุ',
+        year: userData.year || 'ไม่ระบุ',
+        role: userData.role || 'student'
+      };
+    }
+    
+    // Save survey response to Firestore with demographic data
     const responseData = {
       surveyId,
       userId,
       answers,
-      submittedAt: new Date().toISOString()
+      demographics: userDemographics,
+      submittedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
     await db.collection('survey_responses').add(responseData);
 
-    console.log('Survey submission:', { surveyId, userId, timestamp: responseData.submittedAt });
+    console.log('Survey submission successful:', { 
+      surveyId, 
+      userId, 
+      questionCount: Object.keys(answers).length,
+      timestamp: responseData.submittedAt 
+    });
 
     res.json({
       success: true,

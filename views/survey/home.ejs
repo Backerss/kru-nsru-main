@@ -115,6 +115,46 @@
         <!-- Quick Actions -->
         <div class="row mt-4">
           <div class="col-12">
+            <h5 class="mb-3 fw-semibold">สถิติการทำแบบสอบถาม</h5>
+          </div>
+          <div class="col-12 col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body text-center p-4">
+                <div class="mb-3">
+                  <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                </div>
+                <h3 class="mb-1"><%= stats?.completed || 0 %></h3>
+                <p class="text-muted mb-0">ทำแล้ว</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body text-center p-4">
+                <div class="mb-3">
+                  <i class="bi bi-clipboard-check text-primary" style="font-size: 3rem;"></i>
+                </div>
+                <h3 class="mb-1"><%= stats?.total || 0 %></h3>
+                <p class="text-muted mb-0">ทั้งหมด</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+              <div class="card-body text-center p-4">
+                <div class="mb-3">
+                  <i class="bi bi-hourglass-split text-warning" style="font-size: 3rem;"></i>
+                </div>
+                <h3 class="mb-1"><%= stats?.remaining || 0 %></h3>
+                <p class="text-muted mb-0">เหลืออยู่</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions Menu -->
+        <div class="row mt-4">
+          <div class="col-12">
             <h5 class="mb-3 fw-semibold">เมนูด่วน</h5>
           </div>
           <div class="col-12 col-md-6 col-lg-4 mb-3">
@@ -130,13 +170,13 @@
             </a>
           </div>
           <div class="col-12 col-md-6 col-lg-4 mb-3">
-            <a href="/survey/history" class="quick-action-card">
+            <a href="/survey/questionnaire" class="quick-action-card">
               <div class="quick-action-icon" style="background: var(--color-secondary-1);">
                 <i class="bi bi-clock-history text-primary"></i>
               </div>
               <div class="quick-action-content">
                 <h6 class="quick-action-title">ประวัติการทำแบบสอบถาม</h6>
-                <p class="quick-action-text">ดูประวัติที่ผ่านมา</p>
+                <p class="quick-action-text">ดูแบบสอบถามที่ทำไปแล้ว</p>
               </div>
               <i class="bi bi-chevron-right quick-action-arrow"></i>
             </a>

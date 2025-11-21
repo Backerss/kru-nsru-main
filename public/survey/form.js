@@ -102,7 +102,7 @@ function markQuestionAsAnswered(input) {
 function handleFormSubmit() {
   const form = document.getElementById('surveyForm');
   
-  form.addEventListener('submit', function(e) {
+  form.addEventListener('submit', async function(e) {
     e.preventDefault();
 
     // Validate all required fields
@@ -110,12 +110,25 @@ function handleFormSubmit() {
       return;
     }
 
+    // Get survey ID from URL
+    const urlParts = window.location.pathname.split('/');
+    const surveyId = urlParts[urlParts.length - 1];
+
     // Get form data
     const formData = new FormData(form);
     const answers = {};
     
+    // Transform form data into proper format
     for (let [key, value] of formData.entries()) {
-      answers[key] = value;
+      // Convert q1, q2, etc. to question_1, question_2
+      const questionKey = key.replace('q', 'question_');
+      
+      // Try to convert numeric values
+      if (!isNaN(value) && value !== '') {
+        answers[questionKey] = parseInt(value);
+      } else {
+        answers[questionKey] = value;
+      }
     }
 
     // Show loading
@@ -124,24 +137,43 @@ function handleFormSubmit() {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>กำลังส่ง...';
 
-    // Simulate API call
-    setTimeout(() => {
-      // In production, send to backend
-      console.log('Survey answers:', answers);
+    try {
+      // Send to backend
+      const response = await fetch(`/survey/submit/${surveyId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(answers)
+      });
 
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Show success modal
+        const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+        successModal.show();
+
+        // Clear form to prevent accidental resubmission
+        form.reset();
+
+        // Redirect after 3 seconds
+        setTimeout(() => {
+          window.location.href = '/survey/questionnaire';
+        }, 3000);
+      } else {
+        throw new Error(result.message || 'เกิดข้อผิดพลาดในการส่งข้อมูล');
+      }
+    } catch (error) {
+      console.error('Error submitting survey:', error);
+      
       // Reset button
       submitBtn.disabled = false;
       submitBtn.innerHTML = originalText;
-
-      // Show success modal
-      const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-      successModal.show();
-
-      // Redirect after 3 seconds
-      setTimeout(() => {
-        window.location.href = '/survey/questionnaire';
-      }, 3000);
-    }, 1500);
+      
+      // Show error alert
+      showAlert(error.message || 'เกิดข้อผิดพลาดในการส่งแบบสอบถาม กรุณาลองใหม่อีกครั้ง', 'danger');
+    }
   });
 }
 
