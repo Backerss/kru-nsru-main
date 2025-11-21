@@ -15,13 +15,20 @@
                     <i class="bi bi-clipboard-check me-1"></i>แบบสอบถาม
                 </a>
             </li>
+            <% if (user && (user.role === 'admin' || user.role === 'teacher')) { %>
+            <li class="nav-item">
+                <a class="nav-link <%= currentPage === 'admin' ? 'active' : '' %>" href="/admin">
+                    <i class="bi bi-speedometer2 me-1"></i>แผงควบคุม
+                </a>
+            </li>
+            <% } %>
             <li class="nav-item">
                 <a class="nav-link <%= currentPage === 'settings' ? 'active' : '' %>" href="/survey/settings">
                     <i class="bi bi-gear me-1"></i>ตั้งค่า
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link text-muted" href="/login">
+                <a class="nav-link text-danger" href="#" data-logout>
                     <i class="bi bi-box-arrow-right me-1"></i>ออกจากระบบ
                 </a>
             </li>

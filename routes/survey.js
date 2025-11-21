@@ -26,8 +26,11 @@ router.get('/home', async (req, res) => {
     const doc = await userRef.get();
 
     let userData = sessionData;
+    let userRole = 'student';
+    
     if (doc.exists) {
       const dbData = doc.data();
+      userRole = dbData.role || 'student';
       userData = {
         studentId: dbData.studentId,
         name: `${dbData.prefix}${dbData.firstName} ${dbData.lastName}`,
@@ -46,7 +49,8 @@ router.get('/home', async (req, res) => {
 
     res.render('survey/home', {
       title: 'หน้าหลัก',
-      user: userData
+      user: { ...userData, role: userRole },
+      currentPage: 'home'
     });
   } catch (error) {
     console.error('Error loading home page:', error);
@@ -89,7 +93,9 @@ router.get('/questionnaire', (req, res) => {
 
   res.render('survey/questionnaire', {
     title: 'แบบสอบถาม',
-    surveys: surveys
+    surveys: surveys,
+    user: req.session.userData,
+    currentPage: 'questionnaire'
   });
 });
 
@@ -102,8 +108,11 @@ router.get('/settings', async (req, res) => {
     const doc = await userRef.get();
 
     let userData = req.session.userData;
+    let userRole = 'student';
+    
     if (doc.exists) {
       const dbData = doc.data();
+      userRole = dbData.role || 'student';
       userData = {
         studentId: dbData.studentId,
         name: `${dbData.prefix}${dbData.firstName} ${dbData.lastName}`,
@@ -122,7 +131,8 @@ router.get('/settings', async (req, res) => {
 
     res.render('survey/settings', {
       title: 'ตั้งค่า',
-      user: userData
+      user: { ...userData, role: userRole },
+      currentPage: 'settings'
     });
   } catch (error) {
     console.error('Error loading settings page:', error);
@@ -143,7 +153,9 @@ router.get('/form/:id', (req, res) => {
 
       res.render('survey/form', {
         title: surveyData.title,
-        survey: surveyData
+        survey: surveyData,
+        user: req.session.userData,
+        currentPage: 'questionnaire'
       });
     } else {
       res.status(404).send('ไม่พบแบบสอบถามที่ต้องการ');

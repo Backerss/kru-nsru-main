@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'แผงควบคุม' %></title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/colors.css">
+  <link rel="stylesheet" href="/survey/home.css">
+  <link rel="stylesheet" href="/admin/dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <%- include('../survey/partials/desktop-nav', { currentPage: 'admin', user: user }) %>
+  <%- include('../survey/partials/mobile-nav', { currentPage: 'admin', user: user }) %>
+
+  <!-- Main Content -->
+  <main class="container-fluid py-4 py-md-5">
+    <!-- Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="page-header">
+          <h1 class="page-title">
+            <i class="bi bi-speedometer2 text-primary me-2"></i>แผงควบคุม
+          </h1>
+          <p class="page-subtitle text-muted mb-0">ภาพรวมระบบและการจัดการข้อมูล</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-primary">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-number"><%= totalUsers || 0 %></h3>
+            <p class="stat-label">ผู้ใช้ทั้งหมด</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-success">
+            <i class="bi bi-clipboard-check-fill"></i>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-number"><%= totalResponses || 0 %></h3>
+            <p class="stat-label">การตอบแบบสอบถาม</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-info">
+            <i class="bi bi-file-earmark-text-fill"></i>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-number">5</h3>
+            <p class="stat-label">แบบสอบถามทั้งหมด</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-3">
+        <div class="stat-card">
+          <div class="stat-icon bg-warning">
+            <i class="bi bi-percent"></i>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-number"><%= totalUsers > 0 ? Math.round((totalResponses / totalUsers) * 100) : 0 %>%</h3>
+            <p class="stat-label">อัตราการตอบ</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 fw-semibold">
+              <i class="bi bi-bar-chart text-primary me-2"></i>สถิติการตอบแบบสอบถาม
+            </h5>
+          </div>
+          <div class="card-body">
+            <canvas id="surveyResponsesChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 fw-semibold">
+              <i class="bi bi-pie-chart text-primary me-2"></i>สัดส่วนการตอบ
+            </h5>
+          </div>
+          <div class="card-body">
+            <canvas id="surveyDistributionChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom py-3">
+            <h5 class="mb-0 fw-semibold">
+              <i class="bi bi-download text-primary me-2"></i>ส่งออกข้อมูล
+            </h5>
+          </div>
+          <div class="card-body">
+            <p class="text-muted mb-3">ส่งออกข้อมูลการตอบแบบสอบถามไปยัง Google Sheets</p>
+            <div class="row g-3">
+              <% 
+              const surveyNames = {
+                'ethical-knowledge': 'ความรู้ด้านจริยธรรม',
+                'intelligent-tck': 'ความรู้เกี่ยวกับเนื้อหาและเทคโนโลยี (TCK)',
+                'intelligent-tk': 'ความรู้ด้านเทคโนโลยี (TK)',
+                'intelligent-tpack': 'ความรู้ทางเทคโนโลยีการสอน (TPACK)',
+                'intelligent-tpk': 'ความรู้ทางเทคโนโลยีและการสอน (TPK)'
+              };
+              
+              Object.keys(surveyNames).forEach(surveyId => {
+                const surveyName = surveyNames[surveyId];
+                const count = surveyStats[surveyId]?.count || 0;
+              %>
+              <div class="col-12 col-md-6 col-lg-4">
+                <div class="export-card">
+                  <div class="export-info">
+                    <h6 class="mb-1"><%= surveyName %></h6>
+                    <small class="text-muted"><%= count %> คำตอบ</small>
+                  </div>
+                  <button class="btn btn-sm btn-primary export-btn" 
+                          data-survey-id="<%= surveyId %>"
+                          <%= count === 0 ? 'disabled' : '' %>>
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+                    ส่งออก
+                  </button>
+                </div>
+              </div>
+              <% }); %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Users Management Table -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+              <h5 class="mb-0 fw-semibold">
+                <i class="bi bi-people text-primary me-2"></i>จัดการผู้ใช้
+              </h5>
+              <div class="d-flex gap-2 flex-wrap">
+                <input type="text" id="searchUsers" class="form-control form-control-sm" 
+                       placeholder="ค้นหาผู้ใช้..." style="width: 250px;">
+                <select id="filterRole" class="form-select form-select-sm" style="width: 150px;">
+                  <option value="">ทุก Role</option>
+                  <option value="student">นักศึกษา</option>
+                  <option value="teacher">อาจารย์</option>
+                  <option value="admin">ผู้ดูแลระบบ</option>
+                  <option value="person">บุคคลธรรมดา</option>
+                </select>
+                <button class="btn btn-primary btn-sm" id="btnAddUser">
+                  <i class="bi bi-plus-circle me-1"></i>เพิ่มผู้ใช้
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" id="usersTable">
+                <thead class="table-light">
+                  <tr>
+                    <th>รหัสนักศึกษา</th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>อีเมล</th>
+                    <th class="d-none d-md-table-cell">คณะ</th>
+                    <th class="d-none d-lg-table-cell">สาขา</th>
+                    <th class="d-none d-lg-table-cell">ชั้นปี</th>
+                    <th>Role</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (users && users.length > 0) { %>
+                    <% users.forEach(user => { %>
+                    <tr data-student-id="<%= user.studentId %>" data-role="<%= user.role %>">
+                      <td><%= user.studentId %></td>
+                      <td><%= user.name %></td>
+                      <td><%= user.email %></td>
+                      <td class="d-none d-md-table-cell"><%= user.faculty %></td>
+                      <td class="d-none d-lg-table-cell"><%= user.major %></td>
+                      <td class="d-none d-lg-table-cell"><%= user.year %></td>
+                      <td>
+                        <span class="badge bg-<%= user.role === 'admin' ? 'danger' : user.role === 'teacher' ? 'warning' : 'secondary' %>">
+                          <%= user.role === 'admin' ? 'ผู้ดูแลระบบ' : user.role === 'teacher' ? 'อาจารย์' : 'นักศึกษา' %>
+                        </span>
+                      </td>
+                      <td>
+                        <div class="btn-group btn-group-sm">
+                          <button class="btn btn-outline-primary btn-edit-user" 
+                                  data-student-id="<%= user.studentId %>"
+                                  data-user='<%- JSON.stringify(user) %>'
+                                  title="แก้ไขข้อมูล">
+                            <i class="bi bi-pencil"></i>
+                          </button>
+                          <button class="btn btn-outline-danger btn-delete-user" 
+                                  data-student-id="<%= user.studentId %>"
+                                  data-name="<%= user.name %>"
+                                  title="ลบผู้ใช้">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <% }); %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="8" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                        ยังไม่มีข้อมูลผู้ใช้
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto py-4 border-top bg-white">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-12 text-center">
+          <p class="text-muted mb-0 small">© 2025 ระบบแบบสอบถามออนไลน์ - แผงควบคุม</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Add User Modal -->
+  <div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>เพิ่มผู้ใช้ใหม่</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="addUserForm">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">รหัสนักศึกษา <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="studentId" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">คำนำหน้า</label>
+                <select class="form-select" name="prefix">
+                  <option value="">เลือกคำนำหน้า</option>
+                  <option value="นาย">นาย</option>
+                  <option value="นางสาว">นางสาว</option>
+                  <option value="นาง">นาง</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">ชื่อ <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="firstName" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">นามสกุล <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="lastName" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">อีเมล <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" name="email" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">รหัสผ่าน <span class="text-danger">*</span></label>
+                <input type="password" class="form-control" name="password" minlength="6" required>
+                <small class="text-muted">อย่างน้อย 6 ตัวอักษร</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">เบอร์โทรศัพท์</label>
+                <input type="tel" class="form-control" name="phone">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">อายุ</label>
+                <input type="number" class="form-control" name="age" id="add_age" min="1" max="150" readonly>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">วันเกิด</label>
+                <input type="date" class="form-control" name="birthdate">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Role</label>
+                <select class="form-select" name="role">
+                  <option value="student">นักศึกษา</option>
+                  <option value="teacher">อาจารย์</option>
+                  <option value="admin">ผู้ดูแลระบบ</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">คณะ</label>
+                <select class="form-select" name="faculty">
+                  <option value="">เลือกคณะ</option>
+                  <option value="คณะครุศาสตร์">คณะครุศาสตร์</option>
+                  <option value="คณะมนุษยศาสตร์และสังคมศาสตร์">คณะมนุษยศาสตร์และสังคมศาสตร์</option>
+                  <option value="คณะวิทยาศาสตร์และเทคโนโลยี">คณะวิทยาศาสตร์และเทคโนโลยี</option>
+                  <option value="คณะวิทยาการจัดการ">คณะวิทยาการจัดการ</option>
+                  <option value="คณะเทคโนโลยีการเกษตร">คณะเทคโนโลยีการเกษตร</option>
+                  <option value="คณะเทคโนโลยีอุตสาหกรรม">คณะเทคโนโลยีอุตสาหกรรม</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">สาขา</label>
+                <input type="text" class="form-control" name="major">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">ชั้นปี</label>
+                <select class="form-select" name="year">
+                  <option value="">เลือกชั้นปี</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-primary" id="btnSaveNewUser">
+            <i class="bi bi-save me-1"></i>เพิ่มผู้ใช้
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>แก้ไขข้อมูลผู้ใช้</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editUserForm">
+            <input type="hidden" name="originalStudentId" id="edit_originalStudentId">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">รหัสนักศึกษา</label>
+                <input type="text" class="form-control" name="studentId" id="edit_studentId_display">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">คำนำหน้า</label>
+                <select class="form-select" name="prefix" id="edit_prefix">
+                  <option value="">เลือกคำนำหน้า</option>
+                  <option value="นาย">นาย</option>
+                  <option value="นางสาว">นางสาว</option>
+                  <option value="นาง">นาง</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">ชื่อ <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="firstName" id="edit_firstName" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">นามสกุล <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="lastName" id="edit_lastName" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">อีเมล <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" name="email" id="edit_email" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">เบอร์โทรศัพท์</label>
+                <input type="tel" class="form-control" name="phone" id="edit_phone">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">อายุ</label>
+                <input type="number" class="form-control" name="age" id="edit_age" min="1" max="150" readonly>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">วันเกิด</label>
+                <input type="date" class="form-control" name="birthdate" id="edit_birthdate">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Role</label>
+                <select class="form-select" name="role" id="edit_role">
+                  <option value="student">นักศึกษา</option>
+                  <option value="teacher">อาจารย์</option>
+                  <option value="admin">ผู้ดูแลระบบ</option>
+                  <option value="person">บุคคลธรรมดา</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">คณะ</label>
+                <select class="form-select" name="faculty" id="edit_faculty">
+                  <option value="">เลือกคณะ</option>
+                  <option value="คณะครุศาสตร์">คณะครุศาสตร์</option>
+                  <option value="คณะมนุษยศาสตร์และสังคมศาสตร์">คณะมนุษยศาสตร์และสังคมศาสตร์</option>
+                  <option value="คณะวิทยาศาสตร์และเทคโนโลยี">คณะวิทยาศาสตร์และเทคโนโลยี</option>
+                  <option value="คณะวิทยาการจัดการ">คณะวิทยาการจัดการ</option>
+                  <option value="คณะเทคโนโลยีการเกษตร">คณะเทคโนโลยีการเกษตร</option>
+                  <option value="คณะเทคโนโลยีอุตสาหกรรม">คณะเทคโนโลยีอุตสาหกรรม</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">สาขา</label>
+                <input type="text" class="form-control" name="major" id="edit_major">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">ชั้นปี</label>
+                <select class="form-select" name="year" id="edit_year">
+                  <option value="">เลือกชั้นปี</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-warning" id="btnSaveEditUser">
+            <i class="bi bi-save me-1"></i>บันทึก
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="/survey/home.js"></script>
+  <script>
+    // Survey statistics data
+    const surveyStats = <%- JSON.stringify(surveyStats) %>;
+  </script>
+  <script src="/admin/dashboard.js"></script>
+</body>
+
+</html>

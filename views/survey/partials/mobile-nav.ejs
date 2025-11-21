@@ -8,11 +8,17 @@
         <i class="bi bi-clipboard-check<%= currentPage === 'questionnaire' ? '-fill' : '' %>"></i>
         <span>แบบสอบถาม</span>
     </a>
+    <% if (user && (user.role === 'admin' || user.role === 'teacher')) { %>
+    <a href="/admin" class="mobile-nav-item <%= currentPage === 'admin' ? 'active' : '' %>">
+        <i class="bi bi-speedometer2<%= currentPage === 'admin' ? '-fill' : '' %>"></i>
+        <span>แผงควบคุม</span>
+    </a>
+    <% } %>
     <a href="/survey/settings" class="mobile-nav-item <%= currentPage === 'settings' ? 'active' : '' %>">
         <i class="bi bi-gear<%= currentPage === 'settings' ? '-fill' : '' %>"></i>
         <span>ตั้งค่า</span>
     </a>
-    <a href="/login" class="mobile-nav-item">
+    <a href="#" class="mobile-nav-item" data-logout>
         <i class="bi bi-box-arrow-right"></i>
         <span>ออกจากระบบ</span>
     </a>

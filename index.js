@@ -23,6 +23,7 @@ const port = process.env.PORT || 3000;
 const authRoutes = require('./routes/auth');
 const surveyRoutes = require('./routes/survey');
 const forgotPasswordRoutes = require('./routes/forgot-password');
+const adminRoutes = require('./routes/admin');
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -58,6 +59,7 @@ app.get('/', (req, res) => {
 app.use('/', authRoutes);
 app.use('/survey', surveyRoutes);
 app.use('/forgot-password', forgotPasswordRoutes);
+app.use('/admin', adminRoutes);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
