@@ -1,5 +1,20 @@
 const express = require('express');
 const path = require('path');
+const admin = require('firebase-admin');
+const bcrypt = require('bcrypt');
+
+// Initialize Firebase
+try {
+  const serviceAccount = require('./kru-nsru-firebase.json');
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+  console.log('Firebase initialized successfully');
+} catch (error) {
+  console.error('Error initializing Firebase:', error.message);
+}
+
+const db = admin.firestore();
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -43,7 +58,7 @@ app.get('/login', (req, res) => {
   });
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { studentId, password, rememberMe } = req.body;
 
   // Basic validation
@@ -53,40 +68,50 @@ app.post('/login', (req, res) => {
     });
   }
 
-  // Here you would typically check against database
-  // For demo purposes, we'll use simple validation
+  try {
+    // Get user from Firestore
+    const userRef = db.collection('users').doc(studentId);
+    const doc = await userRef.get();
 
-  // Mock user database (in real app, this would be from database)
-  const mockUsers = [
-    { studentId: '1234567890', password: 'password123', name: 'นาย ทดสอบ ระบบ' },
-    { studentId: 'admin', password: 'admin123', name: 'ผู้ดูแลระบบ' }
-  ];
+    if (!doc.exists) {
+      return res.status(401).json({
+        error: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง'
+      });
+    }
 
-  // Find user
-  const user = mockUsers.find(u => u.studentId === studentId && u.password === password);
+    const userData = doc.data();
 
-  if (!user) {
-    return res.status(401).json({
-      error: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง'
+    // Verify password
+    const match = await bcrypt.compare(password, userData.password);
+
+    if (!match) {
+      return res.status(401).json({
+        error: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง'
+      });
+    }
+
+    // Login successful
+    console.log('User logged in:', { studentId, rememberMe, timestamp: new Date().toISOString() });
+
+    // In a real app, you would set session/JWT here
+    res.json({
+      success: true,
+      message: `เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${userData.firstName} ${userData.lastName}`,
+      redirectUrl: '/survey/home', // Redirect to survey home
+      user: {
+        studentId: userData.studentId,
+        name: `${userData.prefix}${userData.firstName} ${userData.lastName}`
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
     });
   }
-
-  // Login successful
-  console.log('User logged in:', { studentId, rememberMe, timestamp: new Date().toISOString() });
-
-  // In a real app, you would set session/JWT here
-  res.json({
-    success: true,
-    message: `เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${user.name}`,
-    redirectUrl: '/',
-    user: {
-      studentId: user.studentId,
-      name: user.name
-    }
-  });
 });
 
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
   const {
     studentId,
     prefix,
@@ -126,27 +151,53 @@ app.post('/register', (req, res) => {
     return res.status(400).json({ error: 'รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง' });
   }
 
-  // Here you would typically save to database
-  const userData = {
-    studentId,
-    prefix,
-    firstName,
-    lastName,
-    birthdate,
-    age: parseInt(age),
-    email,
-    phone,
-    createdAt: new Date().toISOString()
-  };
+  try {
+    // Check if user exists (by studentId)
+    const userRef = db.collection('users').doc(studentId);
+    const doc = await userRef.get();
 
-  console.log('New registration:', userData);
+    if (doc.exists) {
+      return res.status(400).json({ error: 'รหัสนักศึกษานี้มีในระบบแล้ว' });
+    }
 
-  // Send success response
-  res.json({
-    success: true,
-    message: 'สมัครสมาชิกสำเร็จแล้ว!',
-    redirectUrl: '/login'
-  });
+    // Check if email exists
+    const emailQuery = await db.collection('users').where('email', '==', email).get();
+    if (!emailQuery.empty) {
+      return res.status(400).json({ error: 'อีเมลนี้ถูกใช้งานแล้ว' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Save to Firestore
+    const userData = {
+      studentId,
+      prefix,
+      firstName,
+      lastName,
+      birthdate,
+      age: parseInt(age) || 0,
+      email,
+      phone,
+      password: hashedPassword,
+      createdAt: new Date().toISOString(),
+      role: 'student'
+    };
+
+    await userRef.set(userData);
+
+    console.log('New registration:', studentId);
+
+    // Send success response
+    res.json({
+      success: true,
+      message: 'สมัครสมาชิกสำเร็จแล้ว!',
+      redirectUrl: '/login'
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสมัครสมาชิก: ' + error.message });
+  }
 });
 
 
