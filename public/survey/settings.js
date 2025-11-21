@@ -40,14 +40,37 @@ function handlePersonalInfoEdit() {
   const actions = document.getElementById('personalActions');
   const firstName = document.getElementById('firstName');
   const lastName = document.getElementById('lastName');
+  const faculty = document.getElementById('faculty');
+  const major = document.getElementById('major');
+  const year = document.getElementById('year');
   
   let originalFirstName = firstName.value;
   let originalLastName = lastName.value;
+  let originalFaculty = faculty.value;
+  let originalMajor = major.value;
+  let originalYear = year.value;
+  
+  // Check if any academic field can be edited
+  const canEditFaculty = !faculty.hasAttribute('readonly');
+  const canEditMajor = !major.hasAttribute('readonly');
+  const canEditYear = !year.hasAttribute('disabled') || year.value === 'ยังไม่ระบุ';
   
   // Enable editing
   editBtn.addEventListener('click', function() {
     firstName.disabled = false;
     lastName.disabled = false;
+    
+    // Enable academic fields only if they can be edited
+    if (canEditFaculty && faculty.value === 'ยังไม่ระบุ') {
+      faculty.disabled = false;
+    }
+    if (canEditMajor && major.value === 'ยังไม่ระบุ') {
+      major.disabled = false;
+    }
+    if (canEditYear && year.value === 'ยังไม่ระบุ') {
+      year.disabled = false;
+    }
+    
     actions.classList.remove('d-none');
     editBtn.style.display = 'none';
     
@@ -58,24 +81,66 @@ function handlePersonalInfoEdit() {
   cancelBtn.addEventListener('click', function() {
     firstName.value = originalFirstName;
     lastName.value = originalLastName;
+    faculty.value = originalFaculty;
+    major.value = originalMajor;
+    year.value = originalYear;
+    
     firstName.disabled = true;
     lastName.disabled = true;
+    faculty.disabled = true;
+    major.disabled = true;
+    year.disabled = true;
+    
     actions.classList.add('d-none');
     editBtn.style.display = 'block';
   });
   
   // Submit form
-  form.addEventListener('submit', function(e) {
+  form.addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const newFirstName = firstName.value.trim();
     const newLastName = lastName.value.trim();
+    const newFaculty = faculty.value.trim();
+    const newMajor = major.value.trim();
+    const newYear = year.value;
     
     if (!newFirstName || !newLastName) {
       Swal.fire({
         icon: 'warning',
         title: 'กรุณากรอกข้อมูลให้ครบถ้วน',
         text: 'กรุณากรอกชื่อและนามสกุล',
+        confirmButtonText: 'ตกลง'
+      });
+      return;
+    }
+    
+    // Validate academic fields if they are being edited
+    if (faculty.disabled === false && (!newFaculty || newFaculty === 'ยังไม่ระบุ')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาระบุคณะ',
+        text: 'คุณสามารถแก้ไขคณะได้เพียงครั้งเดียว',
+        confirmButtonText: 'ตกลง'
+      });
+      return;
+    }
+    
+    if (major.disabled === false && (!newMajor || newMajor === 'ยังไม่ระบุ')) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาระบุสาขาวิชา',
+        text: 'คุณสามารถแก้ไขสาขาวิชาได้เพียงครั้งเดียว',
+        confirmButtonText: 'ตกลง'
+      });
+      return;
+    }
+    
+    if (year.disabled === false && newYear === 'ยังไม่ระบุ') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาระบุชั้นปี',
+        text: 'คุณสามารถแก้ไขชั้นปีได้เพียงครั้งเดียว',
         confirmButtonText: 'ตกลง'
       });
       return;
@@ -91,26 +156,90 @@ function handlePersonalInfoEdit() {
       }
     });
     
-    // Simulate API call
-    setTimeout(() => {
-      originalFirstName = newFirstName;
-      originalLastName = newLastName;
+    try {
+      // Prepare data to send
+      const updateData = {
+        firstName: newFirstName,
+        lastName: newLastName
+      };
       
-      firstName.disabled = true;
-      lastName.disabled = true;
-      actions.classList.add('d-none');
-      editBtn.style.display = 'block';
+      // Add academic fields if they were edited
+      if (faculty.disabled === false && newFaculty !== 'ยังไม่ระบุ') {
+        updateData.faculty = newFaculty;
+      }
+      if (major.disabled === false && newMajor !== 'ยังไม่ระบุ') {
+        updateData.major = newMajor;
+      }
+      if (year.disabled === false && newYear !== 'ยังไม่ระบุ') {
+        updateData.year = newYear;
+      }
       
-      Swal.fire({
-        icon: 'success',
-        title: 'บันทึกข้อมูลสำเร็จ',
-        timer: 2000,
-        showConfirmButton: false
+      const response = await fetch('/survey/update-personal-info', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
       });
       
-      // Log to console (in production, send to backend)
-      console.log('Personal info updated:', { firstName: newFirstName, lastName: newLastName });
-    }, 1000);
+      const result = await response.json();
+      
+      if (response.ok) {
+        originalFirstName = newFirstName;
+        originalLastName = newLastName;
+        
+        // Update original values for academic fields
+        if (updateData.faculty) {
+          originalFaculty = newFaculty;
+          faculty.setAttribute('readonly', 'readonly');
+        }
+        if (updateData.major) {
+          originalMajor = newMajor;
+          major.setAttribute('readonly', 'readonly');
+        }
+        if (updateData.year) {
+          originalYear = newYear;
+          year.setAttribute('disabled', 'disabled');
+        }
+        
+        firstName.disabled = true;
+        lastName.disabled = true;
+        faculty.disabled = true;
+        major.disabled = true;
+        year.disabled = true;
+        
+        actions.classList.add('d-none');
+        editBtn.style.display = 'block';
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'บันทึกข้อมูลสำเร็จ',
+          text: updateData.faculty || updateData.major || updateData.year 
+            ? 'ข้อมูลของคุณได้รับการบันทึกแล้ว ข้อมูลที่บันทึกไปแล้วจะไม่สามารถแก้ไขได้อีก' 
+            : 'ข้อมูลของคุณได้รับการบันทึกแล้ว',
+          timer: 3000,
+          showConfirmButton: true
+        }).then(() => {
+          // Reload page to reflect changes
+          window.location.reload();
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: result.message || 'ไม่สามารถบันทึกข้อมูลได้',
+          confirmButtonText: 'ตกลง'
+        });
+      }
+    } catch (error) {
+      console.error('Error updating personal info:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์',
+        confirmButtonText: 'ตกลง'
+      });
+    }
   });
 }
 

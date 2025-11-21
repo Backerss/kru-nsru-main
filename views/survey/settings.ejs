@@ -80,26 +80,44 @@
                         required>
                     </div>
 
-                    <!-- Faculty (Read-only) -->
+                    <!-- Faculty -->
                     <div class="col-12 col-md-6">
                       <label class="form-label">คณะ</label>
-                      <input type="text" class="form-control" value="<%= user?.faculty || 'คณะวิทยาศาสตร์' %>" readonly>
-                      <small class="text-muted">ติดต่อเจ้าหน้าที่เพื่อแก้ไข</small>
+                      <input type="text" class="form-control" id="faculty" name="faculty" 
+                        value="<%= user?.faculty || 'ยังไม่ระบุ' %>" 
+                        <%= (user?.faculty && user.faculty !== 'ยังไม่ระบุ') ? 'readonly' : 'disabled' %>>
+                      <small class="text-muted">
+                        <%= (user?.faculty && user.faculty !== 'ยังไม่ระบุ') ? 'ติดต่อเจ้าหน้าที่เพื่อแก้ไข' : 'สามารถแก้ไขได้ 1 ครั้งเท่านั้น' %>
+                      </small>
                     </div>
 
-                    <!-- Major (Read-only) -->
+                    <!-- Major -->
                     <div class="col-12 col-md-6">
                       <label class="form-label">สาขาวิชา</label>
-                      <input type="text" class="form-control" value="<%= user?.major || 'วิทยาการคอมพิวเตอร์' %>"
-                        readonly>
-                      <small class="text-muted">ติดต่อเจ้าหน้าที่เพื่อแก้ไข</small>
+                      <input type="text" class="form-control" id="major" name="major" 
+                        value="<%= user?.major || 'ยังไม่ระบุ' %>"
+                        <%= (user?.major && user.major !== 'ยังไม่ระบุ') ? 'readonly' : 'disabled' %>>
+                      <small class="text-muted">
+                        <%= (user?.major && user.major !== 'ยังไม่ระบุ') ? 'ติดต่อเจ้าหน้าที่เพื่อแก้ไข' : 'สามารถแก้ไขได้ 1 ครั้งเท่านั้น' %>
+                      </small>
                     </div>
 
-                    <!-- Year (Read-only) -->
+                    <!-- Year -->
                     <div class="col-12 col-md-6">
                       <label class="form-label">ชั้นปีที่</label>
-                      <input type="text" class="form-control" value="<%= user?.year || '4' %>" readonly>
-                      <small class="text-muted">ติดต่อเจ้าหน้าที่เพื่อแก้ไข</small>
+                      <select class="form-select" id="year" name="year" 
+                        <%= (user?.year && user.year !== 'ยังไม่ระบุ') ? 'disabled' : 'disabled' %>>
+                        <option value="ยังไม่ระบุ" <%= (!user?.year || user.year === 'ยังไม่ระบุ') ? 'selected' : '' %>>ยังไม่ระบุ</option>
+                        <option value="1" <%= user?.year === '1' ? 'selected' : '' %>>1</option>
+                        <option value="2" <%= user?.year === '2' ? 'selected' : '' %>>2</option>
+                        <option value="3" <%= user?.year === '3' ? 'selected' : '' %>>3</option>
+                        <option value="4" <%= user?.year === '4' ? 'selected' : '' %>>4</option>
+                        <option value="5" <%= user?.year === '5' ? 'selected' : '' %>>5</option>
+                        <option value="6" <%= user?.year === '6' ? 'selected' : '' %>>6</option>
+                      </select>
+                      <small class="text-muted">
+                        <%= (user?.year && user.year !== 'ยังไม่ระบุ') ? 'ติดต่อเจ้าหน้าที่เพื่อแก้ไข' : 'สามารถแก้ไขได้ 1 ครั้งเท่านั้น' %>
+                      </small>
                     </div>
                   </div>
 
