@@ -635,6 +635,14 @@ function initUserManagement() {
       document.getElementById('edit_major').value = (userData.major && userData.major !== 'ยังไม่ระบุ') ? userData.major : '';
       document.getElementById('edit_year').value = (userData.year && userData.year !== 'ยังไม่ระบุ') ? userData.year : '';
       document.getElementById('edit_role').value = userData.role || 'student';
+      
+      // Show/hide Google OAuth notice
+      const googleAuthNotice = document.getElementById('googleAuthNotice');
+      if (userData.authProvider === 'google') {
+        googleAuthNotice.style.display = 'block';
+      } else {
+        googleAuthNotice.style.display = 'none';
+      }
 
       editUserModal.show();
     });
@@ -742,6 +750,100 @@ function initUserManagement() {
             text: error.message
           });
         }
+      }
+    });
+  });
+  
+  // Disconnect Google OAuth Buttons
+  document.querySelectorAll('.btn-disconnect-google').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const studentId = this.dataset.studentId;
+      const name = this.dataset.name;
+      const email = this.dataset.email;
+      
+      const result = await Swal.fire({
+        title: 'ยกเลิกการเชื่อมต่อ Google OAuth?',
+        html: `
+          <p>คุณต้องการยกเลิกการเชื่อมต่อ Google OAuth สำหรับ:</p>
+          <div class="text-start my-3">
+            <strong>ชื่อ:</strong> ${name}<br>
+            <strong>อีเมล:</strong> ${email}
+          </div>
+          <div class="alert alert-warning text-start">
+            <strong>⚠️ การดำเนินการนี้จะ:</strong>
+            <ul class="mb-0">
+              <li>สร้างรหัสผ่านสุ่ม 8 ตัวอักษร</li>
+              <li>ส่งรหัสผ่านใหม่ไปยัง ${email}</li>
+              <li>ผู้ใช้จะต้องเข้าสู่ระบบด้วยรหัสผ่านแทน Google OAuth</li>
+            </ul>
+          </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยัน ยกเลิกการเชื่อมต่อ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
+      });
+      
+      if (!result.isConfirmed) return;
+      
+      // Show loading
+      Swal.fire({
+        title: 'กำลังดำเนินการ...',
+        html: 'กำลังยกเลิกการเชื่อมต่อและส่งรหัสผ่านใหม่',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+      
+      try {
+        const response = await fetch(`/admin/api/users/${studentId}/disconnect-google`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          let html = `<p>${data.message}</p>`;
+          if (data.warning) {
+            html += `<div class="alert alert-warning">${data.warning}</div>`;
+          }
+          if (data.temporaryPassword) {
+            html += `
+              <div class="alert alert-info">
+                <strong>รหัสผ่านชั่วคราว:</strong><br>
+                <code style="font-size: 20px; font-weight: bold;">${data.temporaryPassword}</code><br>
+                <small>กรุณาบันทึกรหัสนี้และแจ้งผู้ใช้</small>
+              </div>
+            `;
+          }
+          
+          await Swal.fire({
+            icon: 'success',
+            title: 'ยกเลิกการเชื่อมต่อสำเร็จ!',
+            html: html,
+            confirmButtonText: 'ตกลง'
+          });
+          
+          // Reload page to update user table
+          window.location.reload();
+        } else {
+          throw new Error(data.message || 'เกิดข้อผิดพลาด');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: error.message || 'ไม่สามารถยกเลิกการเชื่อมต่อได้',
+          confirmButtonText: 'ตกลง'
+        });
       }
     });
   });

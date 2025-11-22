@@ -58,12 +58,28 @@
                       <small class="text-muted">ไม่สามารถแก้ไขได้</small>
                     </div>
 
-                    <!-- Email (Read-only) -->
+                    <!-- Email (Read-only with disconnect option for Google OAuth) -->
                     <div class="col-12 col-md-6">
                       <label class="form-label">อีเมล</label>
-                      <input type="email" class="form-control" value="<%= user?.email || 'student@example.com' %>"
-                        readonly>
-                      <small class="text-muted">ไม่สามารถแก้ไขได้</small>
+                      <div class="position-relative">
+                        <input type="email" class="form-control" value="<%= user?.email || 'student@example.com' %>"
+                          readonly>
+                        <% if (user?.authProvider === 'google') { %>
+                        <button type="button" class="btn btn-sm btn-link text-danger position-absolute" 
+                          id="disconnectGoogleBtn"
+                          style="top: 50%; right: 10px; transform: translateY(-50%); padding: 0; width: 24px; height: 24px;"
+                          title="ยกเลิกการเชื่อมต่อ Google และตั้งรหัสผ่านใหม่">
+                          <i class="bi bi-x-circle-fill"></i>
+                        </button>
+                        <% } %>
+                      </div>
+                      <small class="text-muted">
+                        <% if (user?.authProvider === 'google') { %>
+                          <i class="bi bi-google me-1"></i>เชื่อมต่อผ่าน Google (คลิก X เพื่อยกเลิกและตั้งรหัสผ่าน)
+                        <% } else { %>
+                          ไม่สามารถแก้ไขได้
+                        <% } %>
+                      </small>
                     </div>
 
                     <!-- First Name (Editable) -->
@@ -136,7 +152,8 @@
           </div>
         </div>
 
-        <!-- Change Password Section -->
+        <!-- Change Password Section (Hidden for Google OAuth users) -->
+        <% if (user?.authProvider !== 'google') { %>
         <div class="row mb-4">
           <div class="col-12">
             <div class="settings-card">
@@ -146,57 +163,59 @@
                 </h5>
               </div>
               <div class="settings-card-body">
-                <form id="changePasswordForm">
-                  <div class="row g-3">
-                    <!-- Current Password -->
-                    <div class="col-12">
-                      <label class="form-label required">รหัสผ่านปัจจุบัน</label>
-                      <div class="password-input-group">
-                        <input type="password" class="form-control" id="currentPassword" name="currentPassword"
-                          required>
-                        <button type="button" class="password-toggle" data-target="currentPassword">
-                          <i class="bi bi-eye"></i>
-                        </button>
+                  <!-- Regular users can change password -->
+                  <form id="changePasswordForm">
+                    <div class="row g-3">
+                      <!-- Current Password -->
+                      <div class="col-12">
+                        <label class="form-label required">รหัสผ่านปัจจุบัน</label>
+                        <div class="password-input-group">
+                          <input type="password" class="form-control" id="currentPassword" name="currentPassword"
+                            required>
+                          <button type="button" class="password-toggle" data-target="currentPassword">
+                            <i class="bi bi-eye"></i>
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- New Password -->
+                      <div class="col-12 col-md-6">
+                        <label class="form-label required">รหัสผ่านใหม่</label>
+                        <div class="password-input-group">
+                          <input type="password" class="form-control" id="newPassword" name="newPassword" minlength="6"
+                            required>
+                          <button type="button" class="password-toggle" data-target="newPassword">
+                            <i class="bi bi-eye"></i>
+                          </button>
+                        </div>
+                        <small class="text-muted">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</small>
+                      </div>
+
+                      <!-- Confirm New Password -->
+                      <div class="col-12 col-md-6">
+                        <label class="form-label required">ยืนยันรหัสผ่านใหม่</label>
+                        <div class="password-input-group">
+                          <input type="password" class="form-control" id="confirmNewPassword" name="confirmNewPassword"
+                            minlength="6" required>
+                          <button type="button" class="password-toggle" data-target="confirmNewPassword">
+                            <i class="bi bi-eye"></i>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <!-- New Password -->
-                    <div class="col-12 col-md-6">
-                      <label class="form-label required">รหัสผ่านใหม่</label>
-                      <div class="password-input-group">
-                        <input type="password" class="form-control" id="newPassword" name="newPassword" minlength="6"
-                          required>
-                        <button type="button" class="password-toggle" data-target="newPassword">
-                          <i class="bi bi-eye"></i>
-                        </button>
-                      </div>
-                      <small class="text-muted">รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร</small>
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                      <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-shield-check me-2"></i>เปลี่ยนรหัสผ่าน
+                      </button>
                     </div>
-
-                    <!-- Confirm New Password -->
-                    <div class="col-12 col-md-6">
-                      <label class="form-label required">ยืนยันรหัสผ่านใหม่</label>
-                      <div class="password-input-group">
-                        <input type="password" class="form-control" id="confirmNewPassword" name="confirmNewPassword"
-                          minlength="6" required>
-                        <button type="button" class="password-toggle" data-target="confirmNewPassword">
-                          <i class="bi bi-eye"></i>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Action Buttons -->
-                  <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                      <i class="bi bi-shield-check me-2"></i>เปลี่ยนรหัสผ่าน
-                    </button>
-                  </div>
-                </form>
+                  </form>
               </div>
             </div>
           </div>
         </div>
+        <% } %>
 
         <!-- Contact Admin Section -->
         <div class="row">

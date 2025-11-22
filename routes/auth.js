@@ -255,20 +255,46 @@ router.get('/auth/google/callback',
       if (!existingByEmail.empty) {
         const docSnap = existingByEmail.docs[0];
         const userData = docSnap.data();
-        // Login สำเร็จ
-        req.session.userId = docSnap.id;
-        req.session.userData = {
-          studentId: userData.studentId,
-          prefix: userData.prefix,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          email: userData.email,
-          phone: userData.phone,
-          age: userData.age,
-          birthdate: userData.birthdate,
-          role: userData.role
-        };
-        return res.redirect('/survey/home');
+        
+        // ตรวจสอบว่าเป็นบัญชี Google OAuth อยู่แล้วหรือไม่
+        if (userData.authProvider === 'google') {
+          // Login สำเร็จสำหรับบัญชี Google OAuth
+          req.session.userId = docSnap.id;
+          req.session.userData = {
+            studentId: userData.studentId,
+            prefix: userData.prefix,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            email: userData.email,
+            phone: userData.phone,
+            age: userData.age,
+            birthdate: userData.birthdate,
+            role: userData.role
+          };
+          return res.redirect('/survey/home');
+        } else {
+          // บัญชีที่ใช้ email/password อยู่แล้ว - ต้องถามยืนยันก่อนเปลี่ยนเป็น Google OAuth
+          req.session.pendingGoogleMigration = {
+            userId: docSnap.id,
+            email: email,
+            googleProfile: {
+              id: profile.id,
+              firstName: profile.name?.givenName || userData.firstName,
+              lastName: profile.name?.familyName || userData.lastName
+            },
+            existingUserData: {
+              studentId: userData.studentId,
+              prefix: userData.prefix,
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              phone: userData.phone,
+              age: userData.age,
+              birthdate: userData.birthdate,
+              role: userData.role
+            }
+          };
+          return res.redirect('/auth/confirm-google-migration');
+        }
       }
 
       // ผู้ใช้ใหม่: เก็บข้อมูลพื้นฐานไว้ใน session ให้ไปกรอกโปรไฟล์พร้อมรหัสนักศึกษาเอง
@@ -371,6 +397,72 @@ router.post('/register/complete-profile', async (req, res) => {
   } catch (error) {
     console.error('Complete profile error:', error);
     return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' });
+  }
+});
+
+// Confirm Google Migration Page
+router.get('/auth/confirm-google-migration', (req, res) => {
+  if (!req.session.pendingGoogleMigration) {
+    return res.redirect('/login');
+  }
+
+  res.render('confirm-google-migration', {
+    title: 'ยืนยันการเชื่อมต่อบัญชี Google',
+    userData: req.session.pendingGoogleMigration.existingUserData,
+    email: req.session.pendingGoogleMigration.email
+  });
+});
+
+// Confirm Google Migration POST
+router.post('/auth/confirm-google-migration', async (req, res) => {
+  const { confirm } = req.body;
+
+  if (!req.session.pendingGoogleMigration) {
+    return res.status(400).json({ error: 'ไม่พบข้อมูลการยืนยัน' });
+  }
+
+  try {
+    if (confirm === 'yes') {
+      const db = req.app.get('db');
+      const { userId, googleProfile, existingUserData } = req.session.pendingGoogleMigration;
+
+      // อัปเดตบัญชีเดิมให้เป็น Google OAuth
+      const userRef = db.collection('users').doc(userId);
+      await userRef.update({
+        authProvider: 'google',
+        googleId: googleProfile.id,
+        password: '', // ลบรหัสผ่านเดิม
+        updatedAt: new Date().toISOString(),
+        migratedToGoogleAt: new Date().toISOString()
+      });
+
+      // Login สำเร็จ
+      req.session.userId = userId;
+      req.session.userData = {
+        studentId: existingUserData.studentId,
+        prefix: existingUserData.prefix,
+        firstName: existingUserData.firstName,
+        lastName: existingUserData.lastName,
+        email: req.session.pendingGoogleMigration.email,
+        phone: existingUserData.phone,
+        age: existingUserData.age,
+        birthdate: existingUserData.birthdate,
+        role: existingUserData.role
+      };
+
+      // ลบข้อมูลชั่วคราว
+      delete req.session.pendingGoogleMigration;
+
+      console.log('Google migration successful for user:', userId);
+      return res.json({ success: true, redirectUrl: '/survey/home' });
+    } else {
+      // ผู้ใช้ไม่ยืนยัน - ยกเลิกและกลับไปหน้า login
+      delete req.session.pendingGoogleMigration;
+      return res.json({ success: false, redirectUrl: '/login' });
+    }
+  } catch (error) {
+    console.error('Google migration error:', error);
+    return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการเชื่อมต่อบัญชี' });
   }
 });
 

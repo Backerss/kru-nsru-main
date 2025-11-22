@@ -68,6 +68,7 @@ router.get('/', async (req, res) => {
         major: userData.major || 'ยังไม่ระบุ',
         year: userData.year || 'ยังไม่ระบุ',
         role: userData.role || 'student',
+        authProvider: userData.authProvider || 'email',
         createdAt: userData.createdAt
       });
     });
@@ -567,6 +568,86 @@ router.post('/api/export-to-sheets', async (req, res) => {
     });
   } catch (error) {
     console.error('Error exporting to sheets:', error);
+    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาด' });
+  }
+});
+
+// Disconnect Google OAuth and send random password
+router.post('/api/users/:studentId/disconnect-google', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const db = req.app.get('db');
+    const bcrypt = require('bcrypt');
+    
+    // Get user data
+    const userRef = db.collection('users').doc(studentId);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้' });
+    }
+    
+    const userData = userDoc.data();
+    
+    // Check if user is using Google OAuth
+    if (userData.authProvider !== 'google') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'บัญชีนี้ไม่ได้ใช้ Google OAuth' 
+      });
+    }
+    
+    // Generate random 8-character password (letters + numbers)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+    let randomPassword = '';
+    for (let i = 0; i < 8; i++) {
+      randomPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(randomPassword, 10);
+    
+    // Update user: remove Google OAuth, add password
+    await userRef.update({
+      authProvider: 'email',
+      password: hashedPassword,
+      googleId: null,
+      passwordResetAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    
+    // Send email with new password
+    const emailService = require('../utils/emailService');
+    try {
+      await emailService.sendPasswordResetEmail(userData.email, {
+        name: `${userData.prefix}${userData.firstName} ${userData.lastName}`,
+        studentId: userData.studentId,
+        newPassword: randomPassword
+      });
+      
+      console.log('Google OAuth disconnected and password sent:', { 
+        studentId, 
+        email: userData.email,
+        timestamp: new Date().toISOString() 
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'ยกเลิกการเชื่อมต่อ Google และส่งรหัสผ่านใหม่ไปยังอีเมลเรียบร้อยแล้ว',
+        email: userData.email
+      });
+    } catch (emailError) {
+      console.error('Error sending email:', emailError);
+      // Even if email fails, the disconnection was successful
+      res.json({ 
+        success: true, 
+        message: 'ยกเลิกการเชื่อมต่อ Google สำเร็จ แต่ไม่สามารถส่งอีเมลได้',
+        warning: 'กรุณาแจ้งรหัสผ่านใหม่ให้ผู้ใช้ด้วยตนเอง',
+        temporaryPassword: randomPassword
+      });
+    }
+  } catch (error) {
+    console.error('Error disconnecting Google:', error);
     res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาด' });
   }
 });

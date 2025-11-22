@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
   initPasswordToggles();
   handlePersonalInfoEdit();
   handlePasswordChange();
+  handleGoogleDisconnect();
   initAnimations();
   initLogoutHandlers();
 });
@@ -243,9 +244,134 @@ function handlePersonalInfoEdit() {
   });
 }
 
+// Handle Google OAuth disconnect
+function handleGoogleDisconnect() {
+  const disconnectBtn = document.getElementById('disconnectGoogleBtn');
+  
+  if (!disconnectBtn) return; // Button only exists for Google OAuth users
+  
+  disconnectBtn.addEventListener('click', async function() {
+    const result = await Swal.fire({
+      title: 'ยกเลิกการเชื่อมต่อ Google?',
+      html: `
+        <p>คุณต้องการยกเลิกการเชื่อมต่อกับ Google และตั้งรหัสผ่านใหม่หรือไม่?</p>
+        <div class="alert alert-warning text-start mt-3">
+          <small><strong>หมายเหตุ:</strong></small><br>
+          <small>• คุณจะไม่สามารถเข้าสู่ระบบด้วย Google ได้อีก</small><br>
+          <small>• คุณต้องตั้งรหัสผ่านใหม่สำหรับการเข้าสู่ระบบ</small><br>
+          <small>• คุณจะต้องใช้รหัสนักศึกษาและรหัสผ่านในการเข้าสู่ระบบต่อไป</small>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'ยืนยัน ยกเลิกการเชื่อมต่อ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6'
+    });
+    
+    if (!result.isConfirmed) return;
+    
+    // Prompt for new password
+    const { value: formValues } = await Swal.fire({
+      title: 'ตั้งรหัสผ่านใหม่',
+      html: `
+        <div class="text-start">
+          <label class="form-label">รหัสผ่านใหม่ <span class="text-danger">*</span></label>
+          <input type="password" id="swal-password1" class="form-control mb-3" placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)">
+          
+          <label class="form-label">ยืนยันรหัสผ่านใหม่ <span class="text-danger">*</span></label>
+          <input type="password" id="swal-password2" class="form-control" placeholder="ยืนยันรหัสผ่านใหม่">
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: 'ตั้งรหัสผ่าน',
+      cancelButtonText: 'ยกเลิก',
+      preConfirm: () => {
+        const password1 = document.getElementById('swal-password1').value;
+        const password2 = document.getElementById('swal-password2').value;
+        
+        if (!password1 || !password2) {
+          Swal.showValidationMessage('กรุณากรอกรหัสผ่านให้ครบถ้วน');
+          return false;
+        }
+        
+        if (password1.length < 6) {
+          Swal.showValidationMessage('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+          return false;
+        }
+        
+        if (password1 !== password2) {
+          Swal.showValidationMessage('รหัสผ่านไม่ตรงกัน');
+          return false;
+        }
+        
+        return { password: password1 };
+      }
+    });
+    
+    if (!formValues) return;
+    
+    // Show loading
+    Swal.fire({
+      title: 'กำลังดำเนินการ...',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+    
+    try {
+      const response = await fetch('/survey/disconnect-google', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ newPassword: formValues.password })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'ยกเลิกการเชื่อมต่อสำเร็จ',
+          text: 'คุณได้ตั้งรหัสผ่านใหม่เรียบร้อยแล้ว กรุณาเข้าสู่ระบบอีกครั้ง',
+          confirmButtonText: 'ตกลง',
+          allowOutsideClick: false
+        });
+        
+        // Redirect to login
+        window.location.href = '/logout';
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: result.message || 'ไม่สามารถยกเลิกการเชื่อมต่อได้',
+          confirmButtonText: 'ตกลง'
+        });
+      }
+    } catch (error) {
+      console.error('Error disconnecting Google:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์',
+        confirmButtonText: 'ตกลง'
+      });
+    }
+  });
+}
+
 // Handle password change
 function handlePasswordChange() {
   const form = document.getElementById('changePasswordForm');
+  
+  // Check if form exists (won't exist for Google OAuth users)
+  if (!form) return;
+  
   const currentPassword = document.getElementById('currentPassword');
   const newPassword = document.getElementById('newPassword');
   const confirmNewPassword = document.getElementById('confirmNewPassword');

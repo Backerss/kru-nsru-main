@@ -263,7 +263,186 @@ async function verifyEmailConfig() {
   }
 }
 
+// Email template for password reset (admin disconnect Google)
+function getPasswordResetEmailTemplate(userData, newPassword) {
+  return `
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รหัสผ่านใหม่</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7fa;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    .header {
+      background-color: #2C08C9;
+      padding: 30px;
+      text-align: center;
+      color: #ffffff;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .greeting {
+      font-size: 18px;
+      color: #333333;
+      margin-bottom: 20px;
+    }
+    .message {
+      font-size: 16px;
+      line-height: 1.6;
+      color: #555555;
+      margin-bottom: 30px;
+    }
+    .password-box {
+      background-color: #f8f9fa;
+      border: 2px solid #2C08C9;
+      border-radius: 8px;
+      padding: 25px;
+      text-align: center;
+      margin: 30px 0;
+    }
+    .password-label {
+      font-size: 14px;
+      color: #666666;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .password {
+      font-size: 32px;
+      font-weight: bold;
+      color: #2C08C9;
+      letter-spacing: 3px;
+      font-family: 'Courier New', monospace;
+    }
+    .warning-box {
+      background-color: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .warning-box p {
+      margin: 0;
+      color: #856404;
+      font-size: 14px;
+    }
+    .info-box {
+      background-color: #e7f3ff;
+      border-left: 4px solid #2C08C9;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .info-box p {
+      margin: 0;
+      color: #004085;
+      font-size: 14px;
+    }
+    .footer {
+      padding: 25px 30px;
+      background-color: #f8f9fa;
+      text-align: center;
+      font-size: 13px;
+      color: #999999;
+      border-top: 1px solid #eeeeee;
+    }
+    .footer a {
+      color: #2C08C9;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <div class="header">
+      <h1>🔐 รหัสผ่านใหม่ของคุณ</h1>
+    </div>
+    
+    <div class="content">
+      <p class="greeting">สวัสดี คุณ${userData.name},</p>
+      
+      <p class="message">
+        ระบบได้ยกเลิกการเชื่อมต่อ Google OAuth ของคุณและสร้างรหัสผ่านใหม่ให้แล้ว
+      </p>
+      
+      <div class="info-box">
+        <p><strong>รหัสนักศึกษา:</strong> ${userData.studentId}</p>
+      </div>
+      
+      <div class="password-box">
+        <div class="password-label">รหัสผ่านใหม่ของคุณ</div>
+        <div class="password">${newPassword}</div>
+      </div>
+      
+      <div class="warning-box">
+        <p><strong>⚠️ คำเตือนด้านความปลอดภัย:</strong></p>
+        <p>• กรุณาเข้าสู่ระบบและเปลี่ยนรหัสผ่านทันทีหลังจากได้รับอีเมลนี้</p>
+        <p>• ห้ามแชร์รหัสผ่านนี้กับผู้อื่น</p>
+        <p>• หากไม่ใช่คุณที่ร้องขอ กรุณาติดต่อผู้ดูแลระบบทันที</p>
+      </div>
+      
+      <p class="message">
+        ตอนนี้คุณสามารถเข้าสู่ระบบด้วย:<br>
+        • <strong>รหัสนักศึกษา:</strong> ${userData.studentId}<br>
+        • <strong>รหัสผ่านใหม่:</strong> (ตามที่แสดงข้างบน)
+      </p>
+      
+      <p class="message">
+        หลังจากเข้าสู่ระบบ กรุณาไปที่ <strong>ตั้งค่า → เปลี่ยนรหัสผ่าน</strong> เพื่อเปลี่ยนเป็นรหัสผ่านที่คุณจดจำได้ง่าย
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p>อีเมลนี้ส่งจากระบบอัตโนมัติ กรุณาอย่าตอบกลับ</p>
+      <p>&copy; 2025 ระบบแบบสอบถามออนไลน์ มหาวิทยาลัยราชภัฏนครสวรรค์</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
+// Send password reset email
+async function sendPasswordResetEmail(toEmail, userData) {
+  try {
+    const mailOptions = {
+      from: `"${process.env.EMAIL_FROM_NAME || 'ระบบแบบสอบถามออนไลน์'}" <${EMAIL_USER}>`,
+      to: toEmail,
+      subject: '🔐 รหัสผ่านใหม่ของคุณ - ระบบแบบสอบถามออนไลน์',
+      html: getPasswordResetEmailTemplate(userData, userData.newPassword)
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Password reset email sent:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   sendOtpEmail,
+  sendPasswordResetEmail,
   verifyEmailConfig
 };

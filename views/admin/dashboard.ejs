@@ -377,6 +377,7 @@
                     <th class="d-none d-lg-table-cell">สาขา</th>
                     <th class="d-none d-lg-table-cell">ชั้นปี</th>
                     <th>Role</th>
+                    <th class="d-none d-xl-table-cell">การเข้าสู่ระบบ</th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>
@@ -395,8 +396,28 @@
                           <%= user.role === 'admin' ? 'ผู้ดูแลระบบ' : user.role === 'teacher' ? 'อาจารย์' : user.role === 'person' ? 'บุคคลธรรมดา' : 'นักศึกษา' %>
                         </span>
                       </td>
+                      <td class="d-none d-xl-table-cell">
+                        <% if (user.authProvider === 'google') { %>
+                          <span class="badge bg-primary">
+                            <i class="bi bi-google me-1"></i>Google OAuth
+                          </span>
+                        <% } else { %>
+                          <span class="badge bg-secondary">
+                            <i class="bi bi-key me-1"></i>รหัสผ่าน
+                          </span>
+                        <% } %>
+                      </td>
                       <td>
                         <div class="btn-group btn-group-sm">
+                          <% if (user.authProvider === 'google') { %>
+                          <button class="btn btn-outline-warning btn-disconnect-google" 
+                                  data-student-id="<%= user.studentId %>"
+                                  data-name="<%= user.name %>"
+                                  data-email="<%= user.email %>"
+                                  title="ยกเลิกการเชื่อมต่อ Google">
+                            <i class="bi bi-x-circle"></i>
+                          </button>
+                          <% } %>
                           <button class="btn btn-outline-primary btn-edit-user" 
                                   data-student-id="<%= user.studentId %>"
                                   data-user='<%- JSON.stringify(user) %>'
@@ -415,7 +436,7 @@
                     <% }); %>
                   <% } else { %>
                     <tr>
-                      <td colspan="8" class="text-center text-muted py-5">
+                      <td colspan="9" class="text-center text-muted py-5">
                         <i class="bi bi-inbox display-4 d-block mb-3"></i>
                         ยังไม่มีข้อมูลผู้ใช้
                       </td>
@@ -582,6 +603,14 @@
               <div class="col-md-6">
                 <label class="form-label">เบอร์โทรศัพท์</label>
                 <input type="tel" class="form-control" name="phone" id="edit_phone">
+              </div>
+              <div class="col-12" id="googleAuthNotice" style="display: none;">
+                <div class="alert alert-info">
+                  <i class="bi bi-google me-2"></i>
+                  <strong>บัญชีนี้เข้าสู่ระบบด้วย Google OAuth</strong><br>
+                  <small>ไม่สามารถแก้ไขรหัสผ่านได้ เนื่องจากการยืนยันตัวตนผ่าน Google Account<br>
+                  หากต้องการเปลี่ยนเป็นการเข้าด้วยรหัสผ่าน กรุณาใช้ปุ่ม "ยกเลิกการเชื่อมต่อ Google" ในตารางจัดการผู้ใช้</small>
+                </div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">อายุ</label>

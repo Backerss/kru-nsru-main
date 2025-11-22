@@ -202,7 +202,8 @@ router.get('/settings', async (req, res) => {
         birthdate: dbData.birthdate,
         faculty: dbData.faculty || 'ยังไม่ระบุ',
         major: dbData.major || 'ยังไม่ระบุ',
-        year: dbData.year || 'ยังไม่ระบุ'
+        year: dbData.year || 'ยังไม่ระบุ',
+        authProvider: dbData.authProvider || 'email' // เพิ่มฟิลด์ authProvider
       };
     }
 
@@ -475,6 +476,14 @@ router.post('/change-password', async (req, res) => {
 
     const userData = doc.data();
 
+    // Check if user has a password (Google OAuth users don't have passwords)
+    if (!userData.password || userData.password === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'บัญชีนี้ใช้ Google OAuth ไม่สามารถเปลี่ยนรหัสผ่านได้'
+      });
+    }
+
     // Verify current password
     const match = await bcrypt.compare(currentPassword, userData.password);
 
@@ -505,6 +514,78 @@ router.post('/change-password', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน'
+    });
+  }
+});
+
+// Disconnect Google OAuth and set password
+router.post('/disconnect-google', async (req, res) => {
+  const { newPassword } = req.body;
+  const userId = req.session.userId;
+
+  if (!newPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'กรุณาระบุรหัสผ่านใหม่'
+    });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({
+      success: false,
+      message: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'
+    });
+  }
+
+  try {
+    const bcrypt = require('bcrypt');
+    const db = req.app.get('db');
+    const userRef = db.collection('users').doc(userId);
+    const doc = await userRef.get();
+
+    if (!doc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบข้อมูลผู้ใช้'
+      });
+    }
+
+    const userData = doc.data();
+
+    // Check if user is using Google OAuth
+    if (userData.authProvider !== 'google') {
+      return res.status(400).json({
+        success: false,
+        message: 'บัญชีนี้ไม่ได้ใช้ Google OAuth'
+      });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user data: remove Google OAuth, add password
+    await userRef.update({
+      authProvider: 'email',
+      password: hashedPassword,
+      googleId: null,
+      passwordCreatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+
+    console.log('Google OAuth disconnected and password set:', { 
+      userId, 
+      timestamp: new Date().toISOString() 
+    });
+
+    res.json({
+      success: true,
+      message: 'ยกเลิกการเชื่อมต่อ Google และตั้งรหัสผ่านสำเร็จ'
+    });
+  } catch (error) {
+    console.error('Error disconnecting Google:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการยกเลิกการเชื่อมต่อ'
     });
   }
 });
