@@ -93,14 +93,8 @@ function hideError() {
 document.getElementById('studentId').addEventListener('input', hideError);
 document.getElementById('password').addEventListener('input', hideError);
 
-// Google OAuth login (placeholder for backend implementation)
+// Google OAuth login
 document.getElementById('googleLoginBtn').addEventListener('click', function() {
-    // TODO: Implement Google OAuth flow
-    Swal.fire({
-        icon: 'info',
-        title: 'Google OAuth',
-        text: 'ฟีเจอร์นี้จะพัฒนาในเร็วๆ นี้',
-        confirmButtonText: 'ตกลง'
-    });
-    console.log('Google OAuth login clicked');
+    // Redirect to Google OAuth endpoint (same as register)
+    window.location.href = '/auth/google';
 });
