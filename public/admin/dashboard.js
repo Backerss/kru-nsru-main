@@ -1,6 +1,6 @@
 // Admin Dashboard JavaScript
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   initCharts();
   initAdvancedAnalytics();
   initUserManagement();
@@ -34,7 +34,7 @@ function initCharts() {
 
   const labels = [];
   const data = [];
-  
+
   Object.keys(surveyNames).forEach(surveyId => {
     labels.push(surveyNames[surveyId]);
     data.push(surveyStats[surveyId]?.count || 0);
@@ -188,7 +188,7 @@ function initRadarChart(data) {
           max: data.maxScore,
           ticks: {
             stepSize: 1,
-            callback: function(value) {
+            callback: function (value) {
               return value.toFixed(1);
             }
           },
@@ -206,7 +206,7 @@ function initRadarChart(data) {
         },
         tooltip: {
           callbacks: {
-            label: function(context) {
+            label: function (context) {
               return context.label + ': ' + parseFloat(context.raw).toFixed(2) + ' / ' + data.maxScore;
             }
           }
@@ -344,7 +344,7 @@ function initComparativeCharts(comparative) {
           },
           tooltip: {
             callbacks: {
-              label: function(context) {
+              label: function (context) {
                 const faculty = facultyData[context.dataIndex];
                 return [
                   'คะแนนเฉลี่ย: ' + context.parsed.x.toFixed(2),
@@ -405,7 +405,7 @@ function initComparativeCharts(comparative) {
           },
           tooltip: {
             callbacks: {
-              label: function(context) {
+              label: function (context) {
                 const year = yearData[context.dataIndex];
                 return [
                   'คะแนนเฉลี่ย: ' + context.parsed.y.toFixed(2),
@@ -424,7 +424,7 @@ function initComparativeCharts(comparative) {
 function initTrendChart(trendData) {
   const ctx = document.getElementById('trendChart');
   const alert = document.getElementById('trendAlert');
-  
+
   if (!ctx) return;
 
   if (trendData.enabled && trendData.dates.length > 0) {
@@ -473,47 +473,220 @@ function initTrendChart(trendData) {
   }
 }
 
-// Initialize User Management
+// Initialize User Management with Pagination
 function initUserManagement() {
   const searchInput = document.getElementById('searchUsers');
   const filterRole = document.getElementById('filterRole');
-  const tableBody = document.querySelector('#usersTable tbody');
+  const filterAuthProvider = document.getElementById('filterAuthProvider');
+  const entriesPerPage = document.getElementById('entriesPerPage');
+  const tableBody = document.getElementById('tableBody');
+  const pagination = document.getElementById('pagination');
+  const paginationInfo = document.getElementById('paginationInfo');
+  const tableInfo = document.getElementById('tableInfo');
+
   const allRows = Array.from(tableBody.querySelectorAll('tr[data-student-id]'));
 
-  // Search functionality
-  if (searchInput) {
-    searchInput.addEventListener('input', filterTable);
-  }
+  let currentPage = 1;
+  let rowsPerPage = parseInt(entriesPerPage?.value || 25);
 
-  // Role filter
-  if (filterRole) {
-    filterRole.addEventListener('change', filterTable);
-  }
+  // Filter and Pagination System
+  function applyFiltersAndPagination() {
+    const searchTerm = searchInput?.value.toLowerCase().trim() || '';
+    const roleFilter = filterRole?.value || '';
+    const authFilter = filterAuthProvider?.value || '';
 
-  function filterTable() {
-    const searchTerm = searchInput.value.toLowerCase();
-    const roleFilter = filterRole.value;
+    // Filter rows
+    const filteredRows = allRows.filter(row => {
+      const name = (row.dataset.name || '').toLowerCase();
+      const email = (row.dataset.email || '').toLowerCase();
+      const studentId = (row.dataset.studentId || '').toLowerCase();
+      const role = row.dataset.role || '';
+      const authProvider = row.dataset.authProvider || '';
 
-    allRows.forEach(row => {
-      const text = row.textContent.toLowerCase();
-      const role = row.dataset.role;
-      
-      const matchesSearch = text.includes(searchTerm);
+      const matchesSearch = !searchTerm ||
+        name.includes(searchTerm) ||
+        email.includes(searchTerm) ||
+        studentId.includes(searchTerm);
       const matchesRole = !roleFilter || role === roleFilter;
+      const matchesAuth = !authFilter || authProvider === authFilter;
 
-      if (matchesSearch && matchesRole) {
-        row.style.display = '';
+      return matchesSearch && matchesRole && matchesAuth;
+    });
+
+    const totalFiltered = filteredRows.length;
+    const totalPages = Math.ceil(totalFiltered / rowsPerPage) || 1;
+
+    // Adjust current page if needed
+    if (currentPage > totalPages) {
+      currentPage = totalPages;
+    }
+
+    // Hide all rows first
+    allRows.forEach(row => row.style.display = 'none');
+
+    // Show only paginated rows
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const visibleRows = filteredRows.slice(start, end);
+
+    visibleRows.forEach(row => row.style.display = '');
+
+    // Show empty state message if no results
+    const noDataRow = document.getElementById('noDataRow');
+    if (totalFiltered === 0) {
+      if (!noDataRow) {
+        const tbody = document.getElementById('tableBody');
+        const emptyRow = document.createElement('tr');
+        emptyRow.id = 'noDataRow';
+        emptyRow.innerHTML = `
+          <td colspan="6" class="text-center text-muted py-5">
+            <i class="bi bi-inbox display-4 d-block mb-3"></i>
+            <p>ไม่พบข้อมูลที่ค้นหา</p>
+          </td>
+        `;
+        tbody.appendChild(emptyRow);
       } else {
-        row.style.display = 'none';
+        noDataRow.style.display = '';
       }
+    } else {
+      if (noDataRow) {
+        noDataRow.style.display = 'none';
+      }
+    }
+
+    // Update info
+    if (tableInfo) {
+      tableInfo.textContent = `แสดง ${totalFiltered} จาก ${allRows.length}`;
+    }
+
+    if (paginationInfo) {
+      if (totalFiltered === 0) {
+        paginationInfo.textContent = 'ไม่พบข้อมูล';
+      } else {
+        paginationInfo.textContent = `แสดง ${start + 1}-${Math.min(end, totalFiltered)} จาก ${totalFiltered} รายการ`;
+      }
+    }
+
+    // Render pagination buttons
+    renderPagination(totalPages, totalFiltered);
+  }
+
+  function renderPagination(totalPages, totalFiltered) {
+    if (!pagination) return;
+
+    pagination.innerHTML = '';
+
+    if (totalFiltered === 0 || totalPages === 1) {
+      return;
+    }
+
+    // Previous button
+    const prevLi = document.createElement('li');
+    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+    prevLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage - 1}">«</a>`;
+    pagination.appendChild(prevLi);
+
+    // Page numbers
+    const maxButtons = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+    if (endPage - startPage < maxButtons - 1) {
+      startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+
+    if (startPage > 1) {
+      const firstLi = document.createElement('li');
+      firstLi.className = 'page-item';
+      firstLi.innerHTML = `<a class="page-link" href="#" data-page="1">1</a>`;
+      pagination.appendChild(firstLi);
+
+      if (startPage > 2) {
+        const dotsLi = document.createElement('li');
+        dotsLi.className = 'page-item disabled';
+        dotsLi.innerHTML = `<span class="page-link">...</span>`;
+        pagination.appendChild(dotsLi);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      const li = document.createElement('li');
+      li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+      li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
+      pagination.appendChild(li);
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        const dotsLi = document.createElement('li');
+        dotsLi.className = 'page-item disabled';
+        dotsLi.innerHTML = `<span class="page-link">...</span>`;
+        pagination.appendChild(dotsLi);
+      }
+
+      const lastLi = document.createElement('li');
+      lastLi.className = 'page-item';
+      lastLi.innerHTML = `<a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a>`;
+      pagination.appendChild(lastLi);
+    }
+
+    // Next button
+    const nextLi = document.createElement('li');
+    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+    nextLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage + 1}">»</a>`;
+    pagination.appendChild(nextLi);
+
+    // Add click handlers
+    pagination.querySelectorAll('a.page-link').forEach(link => {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        const page = parseInt(this.dataset.page);
+        if (page && page !== currentPage && page >= 1 && page <= totalPages) {
+          currentPage = page;
+          applyFiltersAndPagination();
+        }
+      });
     });
   }
+
+  // Event listeners
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      currentPage = 1;
+      applyFiltersAndPagination();
+    });
+  }
+
+  if (filterRole) {
+    filterRole.addEventListener('change', () => {
+      currentPage = 1;
+      applyFiltersAndPagination();
+    });
+  }
+
+  if (filterAuthProvider) {
+    filterAuthProvider.addEventListener('change', () => {
+      currentPage = 1;
+      applyFiltersAndPagination();
+    });
+  }
+
+  if (entriesPerPage) {
+    entriesPerPage.addEventListener('change', () => {
+      rowsPerPage = parseInt(entriesPerPage.value);
+      currentPage = 1;
+      applyFiltersAndPagination();
+    });
+  }
+
+  // Initial render
+  applyFiltersAndPagination();
 
   // Add User Button
   const btnAddUser = document.getElementById('btnAddUser');
   const addUserModal = new bootstrap.Modal(document.getElementById('addUserModal'));
   const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
-  
+
   if (btnAddUser) {
     btnAddUser.addEventListener('click', () => {
       document.getElementById('addUserForm').reset();
@@ -596,14 +769,14 @@ function initUserManagement() {
 
   // Edit User Buttons
   document.querySelectorAll('.btn-edit-user').forEach(btn => {
-    btn.addEventListener('click', function() {
+    btn.addEventListener('click', function () {
       const userData = JSON.parse(this.dataset.user);
       console.log('User Data:', userData); // Debug log
-      
+
       // Extract prefix from firstName if prefix is empty
       let prefix = userData.prefix || '';
       let firstName = userData.firstName || '';
-      
+
       if (!prefix && firstName) {
         // Check if firstName starts with prefix
         if (firstName.startsWith('นาย')) {
@@ -617,7 +790,7 @@ function initUserManagement() {
           firstName = firstName.substring(3);
         }
       }
-      
+
       // Fill form with user data
       // Keep original id hidden (used for URL), allow editing the visible id
       document.getElementById('edit_originalStudentId').value = userData.studentId || '';
@@ -635,7 +808,7 @@ function initUserManagement() {
       document.getElementById('edit_major').value = (userData.major && userData.major !== 'ยังไม่ระบุ') ? userData.major : '';
       document.getElementById('edit_year').value = (userData.year && userData.year !== 'ยังไม่ระบุ') ? userData.year : '';
       document.getElementById('edit_role').value = userData.role || 'student';
-      
+
       // Show/hide Google OAuth notice
       const googleAuthNotice = document.getElementById('googleAuthNotice');
       if (userData.authProvider === 'google') {
@@ -707,7 +880,7 @@ function initUserManagement() {
 
   // Delete User Buttons
   document.querySelectorAll('.btn-delete-user').forEach(btn => {
-    btn.addEventListener('click', async function() {
+    btn.addEventListener('click', async function () {
       const studentId = this.dataset.studentId;
       const name = this.dataset.name;
 
@@ -753,14 +926,14 @@ function initUserManagement() {
       }
     });
   });
-  
+
   // Disconnect Google OAuth Buttons
   document.querySelectorAll('.btn-disconnect-google').forEach(btn => {
-    btn.addEventListener('click', async function() {
+    btn.addEventListener('click', async function () {
       const studentId = this.dataset.studentId;
       const name = this.dataset.name;
       const email = this.dataset.email;
-      
+
       const result = await Swal.fire({
         title: 'ยกเลิกการเชื่อมต่อ Google OAuth?',
         html: `
@@ -785,9 +958,9 @@ function initUserManagement() {
         confirmButtonColor: '#d33',
         cancelButtonColor: '#3085d6'
       });
-      
+
       if (!result.isConfirmed) return;
-      
+
       // Show loading
       Swal.fire({
         title: 'กำลังดำเนินการ...',
@@ -798,7 +971,7 @@ function initUserManagement() {
           Swal.showLoading();
         }
       });
-      
+
       try {
         const response = await fetch(`/admin/api/users/${studentId}/disconnect-google`, {
           method: 'POST',
@@ -806,9 +979,9 @@ function initUserManagement() {
             'Content-Type': 'application/json'
           }
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok && data.success) {
           let html = `<p>${data.message}</p>`;
           if (data.warning) {
@@ -823,14 +996,14 @@ function initUserManagement() {
               </div>
             `;
           }
-          
+
           await Swal.fire({
             icon: 'success',
             title: 'ยกเลิกการเชื่อมต่อสำเร็จ!',
             html: html,
             confirmButtonText: 'ตกลง'
           });
-          
+
           // Reload page to update user table
           window.location.reload();
         } else {
@@ -852,7 +1025,7 @@ function initUserManagement() {
 // Initialize Export Buttons
 function initExportButtons() {
   document.querySelectorAll('.export-btn').forEach(btn => {
-    btn.addEventListener('click', async function() {
+    btn.addEventListener('click', async function () {
       const surveyId = this.dataset.surveyId;
 
       Swal.fire({
