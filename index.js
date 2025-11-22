@@ -2,6 +2,8 @@ const express = require('express');
 const path = require('path');
 const admin = require('firebase-admin');
 const session = require('express-session');
+const passport = require('passport');
+require('dotenv').config();
 
 // Initialize Firebase
 try {
@@ -37,7 +39,7 @@ app.use(express.json());
 
 // Session configuration
 app.use(session({
-  secret: 'kru-nsru-secret-key-2025',
+  secret: process.env.SESSION_SECRET || 'kru-nsru-secret-key-2025',
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -45,6 +47,10 @@ app.use(session({
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Root redirect
 app.get('/', (req, res) => {

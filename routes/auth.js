@@ -1,6 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+
+// Google OAuth Configuration
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'YOUR_GOOGLE_CLIENT_SECRET';
+const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:3000/auth/google/callback';
+
+// Configure Passport Google Strategy
+passport.use(new GoogleStrategy({
+  clientID: GOOGLE_CLIENT_ID,
+  clientSecret: GOOGLE_CLIENT_SECRET,
+  callbackURL: CALLBACK_URL
+},
+async (accessToken, refreshToken, profile, done) => {
+  try {
+    // ตรวจสอบว่าเป็นอีเมล @nsru.ac.th เท่านั้น
+    const email = profile.emails[0].value;
+    if (!email.endsWith('@nsru.ac.th')) {
+      return done(null, false, { message: 'กรุณาใช้อีเมลของมหาวิทยาลัย (@nsru.ac.th) เท่านั้น' });
+    }
+
+    return done(null, profile);
+  } catch (error) {
+    return done(error, null);
+  }
+}));
+
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+  done(null, user);
+});
 
 // Register page
 router.get('/register', (req, res) => {
@@ -188,6 +223,155 @@ router.get('/logout', (req, res) => {
     }
     res.redirect('/login');
   });
+});
+
+// Google OAuth Routes
+router.get('/auth/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    hd: 'nsru.ac.th' // จำกัดเฉพาะโดเมน nsru.ac.th
+  })
+);
+
+router.get('/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/register?error=google' }),
+  async (req, res) => {
+    try {
+      const db = req.app.get('db');
+      const profile = req.user;
+      const email = profile.emails[0].value;
+
+      // ตรวจสอบอีเมลอีกครั้งเพื่อความปลอดภัย
+      if (!email.endsWith('@nsru.ac.th')) {
+        return res.redirect('/register?error=invalid_domain');
+      }
+
+      // ค้นหาผู้ใช้จากอีเมล (รองรับกรณีที่ doc id เป็นรหัสนักศึกษา)
+      const existingByEmail = await db.collection('users')
+        .where('email', '==', email)
+        .limit(1)
+        .get();
+
+      if (!existingByEmail.empty) {
+        const docSnap = existingByEmail.docs[0];
+        const userData = docSnap.data();
+        // Login สำเร็จ
+        req.session.userId = docSnap.id;
+        req.session.userData = {
+          studentId: userData.studentId,
+          prefix: userData.prefix,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          email: userData.email,
+          phone: userData.phone,
+          age: userData.age,
+          birthdate: userData.birthdate,
+          role: userData.role
+        };
+        return res.redirect('/survey/home');
+      }
+
+      // ผู้ใช้ใหม่: เก็บข้อมูลพื้นฐานไว้ใน session ให้ไปกรอกโปรไฟล์พร้อมรหัสนักศึกษาเอง
+      const firstName = profile.name?.givenName || '';
+      const lastName = profile.name?.familyName || '';
+
+      req.session.userId = null; // ยังไม่ผูกกับ studentId
+      req.session.userData = {
+        studentId: '',
+        prefix: '',
+        firstName,
+        lastName,
+        email,
+        phone: '',
+        age: 0,
+        birthdate: '',
+        role: 'student',
+        authProvider: 'google',
+        googleId: profile.id,
+        profileComplete: false
+      };
+      req.session.needsProfileCompletion = true;
+
+      console.log('Google OAuth new user session created for:', email);
+      return res.redirect('/register/complete-profile');
+    } catch (error) {
+      console.error('Google OAuth callback error:', error);
+      return res.redirect('/register?error=server');
+    }
+  }
+);
+
+// Complete Profile Page (for Google OAuth users)
+router.get('/register/complete-profile', (req, res) => {
+  if (!req.session.needsProfileCompletion || !req.session.userData) {
+    return res.redirect('/register');
+  }
+
+  res.render('complete-profile', {
+    title: 'กรอกข้อมูลเพิ่มเติม',
+    userData: req.session.userData
+  });
+});
+
+// Complete Profile POST
+router.post('/register/complete-profile', async (req, res) => {
+  // ต้องมีข้อมูลจาก Google OAuth ไว้ก่อน
+  if (!req.session.userData || !req.session.needsProfileCompletion) {
+    return res.status(401).json({ error: 'ไม่ได้รับอนุญาต' });
+  }
+
+  const { studentId, prefix, phone, birthdate, age } = req.body;
+
+  if (!studentId || String(studentId).trim() === '') {
+    return res.status(400).json({ error: 'กรุณากรอกรหัสนักศึกษา' });
+  }
+
+  try {
+    const db = req.app.get('db');
+
+    // ตรวจสอบรหัสนักศึกษาว่าซ้ำหรือไม่
+    const userRef = db.collection('users').doc(String(studentId).trim());
+    const docSnap = await userRef.get();
+    if (docSnap.exists) {
+      return res.status(400).json({ error: 'รหัสนักศึกษานี้มีในระบบแล้ว' });
+    }
+
+    // สร้างผู้ใช้ใหม่ด้วยข้อมูลจาก session + แบบฟอร์ม
+    const base = req.session.userData;
+    const newUser = {
+      studentId: String(studentId).trim(),
+      prefix: prefix || '',
+      firstName: base.firstName || '',
+      lastName: base.lastName || '',
+      email: base.email,
+      phone: phone || '',
+      birthdate: birthdate || '',
+      age: parseInt(age) || 0,
+      password: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      role: base.role || 'student',
+      authProvider: 'google',
+      googleId: base.googleId || '',
+      profileComplete: true
+    };
+
+    await userRef.set(newUser);
+
+    // อัปเดต session
+    req.session.userId = newUser.studentId;
+    req.session.userData = newUser;
+    req.session.needsProfileCompletion = false;
+
+    return res.json({
+      success: true,
+      message: 'บันทึกข้อมูลสำเร็จ',
+      redirectUrl: '/survey/home'
+    });
+  } catch (error) {
+    console.error('Complete profile error:', error);
+    return res.status(500).json({ error: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล' });
+  }
 });
 
 module.exports = router;

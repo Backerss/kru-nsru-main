@@ -8,6 +8,7 @@
         <%= title %>
     </title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/colors.css">
     <link rel="stylesheet" href="/register.css">
 </head>
@@ -25,6 +26,12 @@
                             <p class="text-muted">กรอกข้อมูลเพื่อสมัครสมาชิก</p>
                         </div>
 
+                        <!-- Google OAuth Error Alert -->
+                        <div id="googleErrorAlert" class="alert alert-danger d-none" role="alert">
+                            <strong>ไม่สามารถสมัครด้วย Google ได้!</strong>
+                            <p class="mb-0" id="googleErrorMessage"></p>
+                        </div>
+
                         <!-- Google OAuth Section -->
                         <div class="oauth-section mb-4">
                             <button type="button" class="btn btn-google w-100 mb-3" id="googleRegisterBtn">
@@ -38,8 +45,14 @@
                                     <path fill="#EA4335"
                                         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                                 </svg>
-                                สมัครด้วย Google
+                                สมัครด้วยอีเมลมหาวิทยาลัย (@nsru.ac.th)
                             </button>
+                            <div class="form-text text-center mb-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-shield-check"></i>
+                                    จำกัดเฉพาะอีเมลนักศึกษา/บุคลากร @nsru.ac.th เท่านั้น
+                                </small>
+                            </div>
 
                             <div class="divider">
                                 <span class="divider-text">หรือ</span>

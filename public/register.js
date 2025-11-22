@@ -27,11 +27,42 @@ document.getElementById('confirmPassword').addEventListener('input', function ()
     }
 });
 
-// Google OAuth registration (placeholder for backend implementation)
+// Google OAuth registration
 document.getElementById('googleRegisterBtn').addEventListener('click', function () {
-    // TODO: Implement Google OAuth flow
-    alert('Google OAuth registration will be implemented in backend');
-    console.log('Google OAuth registration clicked');
+    // Redirect to Google OAuth endpoint
+    window.location.href = '/auth/google';
+});
+
+// Check for Google OAuth errors in URL
+window.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const error = urlParams.get('error');
+    
+    if (error) {
+        const errorAlert = document.getElementById('googleErrorAlert');
+        const errorMessage = document.getElementById('googleErrorMessage');
+        
+        let message = '';
+        switch(error) {
+            case 'invalid_domain':
+                message = 'กรุณาใช้อีเมลของมหาวิทยาลัย (@nsru.ac.th) เท่านั้น';
+                break;
+            case 'google':
+                message = 'การเข้าสู่ระบบด้วย Google ล้มเหลว กรุณาลองใหม่อีกครั้ง';
+                break;
+            case 'server':
+                message = 'เกิดข้อผิดพลาดจากเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง';
+                break;
+            default:
+                message = 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ';
+        }
+        
+        errorMessage.textContent = message;
+        errorAlert.classList.remove('d-none');
+        
+        // Remove error parameter from URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 });
 
 // Show Thai Buddhist year (พ.ศ.) for birthdate and calculate age
