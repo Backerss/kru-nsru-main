@@ -3,6 +3,7 @@ const path = require('path');
 const admin = require('firebase-admin');
 const session = require('express-session');
 const passport = require('passport');
+const { verifyEmailConfig } = require('./utils/emailService');
 require('dotenv').config();
 
 // Initialize Firebase
@@ -11,9 +12,9 @@ try {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
-  console.log('Firebase initialized successfully');
+  console.log('✅ Firebase initialized successfully');
 } catch (error) {
-  console.error('Error initializing Firebase:', error.message);
+  console.error('❌ Error initializing Firebase:', error.message);
 }
 
 const db = admin.firestore();
@@ -67,6 +68,9 @@ app.use('/survey', surveyRoutes);
 app.use('/forgot-password', forgotPasswordRoutes);
 app.use('/admin', adminRoutes);
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+app.listen(port, async () => {
+  console.log(`🚀 Server running at http://localhost:${port}`);
+  
+  // Verify email configuration
+  await verifyEmailConfig();
 });

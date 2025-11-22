@@ -1,16 +1,12 @@
 const express = require('express');
 const router = express.Router();
+const { sendOtpEmail } = require('../utils/emailService');
 
-// In-memory OTP store: { [email]: { otp: '123456', expiresAt: 0 } }
+// In-memory OTP store: { [email]: { otp: '123456', expiresAt: 0, recipientName: 'Name' } }
 const otpStore = {};
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-// Stub email sender - replace with real email sending in production
-function sendOtpEmail(toEmail, otp) {
-  console.log(`[OTP SEND] To: ${toEmail} | OTP: ${otp} | (This is a stub - integrate real email service)`);
 }
 
 // Request email page
@@ -60,15 +56,31 @@ router.post('/send-otp', async (req, res) => {
       });
     }
 
+    // Get user data
+    const userData = usersQuery.docs[0].data();
+    const recipientName = `${userData.prefix || ''}${userData.firstName || 'ผู้ใช้'} ${userData.lastName || ''}`.trim();
+
     // Generate and store OTP (valid 5 minutes)
     const otp = generateOTP();
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-    otpStore[email] = { otp, expiresAt };
+    otpStore[email] = { otp, expiresAt, recipientName };
 
-    // Send email (stub for now)
-    sendOtpEmail(email, otp);
+    // Send email (real email service)
+    const emailResult = await sendOtpEmail(email, otp, recipientName);
+    
+    if (!emailResult.success) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'ไม่สามารถส่งอีเมลได้ กรุณาลองใหม่อีกครั้ง' 
+      });
+    }
 
-    return res.json({ success: true, message: 'ส่งรหัสยืนยันแล้ว' });
+    console.log(`[OTP SENT] To: ${email} | Recipient: ${recipientName}`);
+
+    return res.json({ 
+      success: true, 
+      message: 'ส่งรหัสยืนยันไปยังอีเมลของคุณแล้ว โปรดตรวจสอบกล่องจดหมาย' 
+    });
   } catch (error) {
     console.error('Error sending OTP:', error);
     return res.status(500).json({ 
