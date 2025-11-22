@@ -9,11 +9,33 @@ function requireAdminOrTeacher(req, res, next) {
   
   const userRole = req.session.userData?.role;
   if (userRole !== 'admin' && userRole !== 'teacher') {
-    return res.status(403).render('error', {
-      title: 'ไม่มีสิทธิ์เข้าถึง',
-      message: 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้',
-      error: { status: 403 }
-    });
+    return res.status(403).send(`
+      <!DOCTYPE html>
+      <html lang="th">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>ไม่มีสิทธิ์เข้าถึง</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+      </head>
+      <body class="bg-light">
+        <div class="container">
+          <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
+            <div class="col-md-6">
+              <div class="card shadow">
+                <div class="card-body text-center p-5">
+                  <h1 class="display-1 text-danger">403</h1>
+                  <h2 class="mb-3">ไม่มีสิทธิ์เข้าถึง</h2>
+                  <p class="text-muted mb-4">คุณไม่มีสิทธิ์เข้าถึงหน้านี้</p>
+                  <a href="/survey/home" class="btn btn-primary">กลับหน้าหลัก</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
   }
   
   next();
