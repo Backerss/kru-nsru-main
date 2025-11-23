@@ -79,13 +79,54 @@ function loadSurveyQuestions(surveyId) {
 }
 
 /**
+ * Check if response already exists in sheet
+ * @param {string} sheetName - Sheet name
+ * @param {string} studentId - Student ID to check
+ * @param {string} timestamp - Timestamp to check (optional for fuzzy matching)
+ * @returns {Promise<boolean>} True if exists
+ */
+async function isResponseExists(sheetName, studentId, timestamp = null) {
+  try {
+    const spreadsheetId = getSpreadsheetId();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: `${sheetName}!A2:B1000` // Get Timestamp and Student ID columns
+    });
+    
+    const rows = response.data.values || [];
+    
+    // Check if this student ID already exists
+    for (const row of rows) {
+      const [rowTimestamp, rowStudentId] = row;
+      if (rowStudentId === studentId) {
+        // If timestamp provided, check if it's within 5 seconds (same response)
+        if (timestamp) {
+          const rowTime = new Date(rowTimestamp).getTime();
+          const checkTime = new Date(timestamp).getTime();
+          if (Math.abs(rowTime - checkTime) < 5000) {
+            return true; // Same response
+          }
+        } else {
+          return true; // Student already has response
+        }
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    return false; // If error, assume not exists
+  }
+}
+
+/**
  * Append a survey response to Google Sheets
  * @param {string} surveyId - Survey identifier
  * @param {object} responseData - Response data
  * @param {object} userData - User data
+ * @param {boolean} checkDuplicate - Whether to check for duplicates (default: true)
  * @returns {Promise<boolean>} Success status
  */
-async function appendSurveyResponse(surveyId, responseData, userData) {
+async function appendSurveyResponse(surveyId, responseData, userData, checkDuplicate = true) {
   if (!isConfigured && !initializeGoogleSheets()) {
     console.log('ℹ️  Google Sheets export disabled (not configured)');
     return false;
@@ -134,12 +175,22 @@ async function appendSurveyResponse(surveyId, responseData, userData) {
       // Headers check failed, continue anyway
     }
     
-    const timestamp = new Date().toISOString();
+    const timestamp = responseData.timestamp || new Date().toISOString();
+    const studentId = userData.studentId || '';
+
+    // Check for duplicate if enabled
+    if (checkDuplicate && studentId) {
+      const exists = await isResponseExists(sheetName, studentId, timestamp);
+      if (exists) {
+        console.log(`ℹ️  Response already exists in ${sheetName} for student ${studentId} - skipping`);
+        return true; // Return true to indicate "handled" (not an error)
+      }
+    }
 
     // Build row data
     const rowData = [
       timestamp,
-      userData.studentId || '',
+      studentId,
       `${userData.prefix || ''}${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
       userData.email || '',
       userData.faculty || '',
@@ -350,12 +401,46 @@ async function testConnection() {
 }
 
 /**
- * Backfill all existing survey responses from Firestore to Google Sheets
+ * Clear all data in a sheet (keep headers)
+ * @param {string} sheetName - Sheet name
+ * @returns {Promise<boolean>}
+ */
+async function clearSheetData(sheetName) {
+  try {
+    const spreadsheetId = getSpreadsheetId();
+    
+    // Get all data to find last row
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: spreadsheetId,
+      range: `${sheetName}!A:Z`
+    });
+    
+    const rows = response.data.values || [];
+    if (rows.length <= 1) {
+      return true; // No data to clear (only headers or empty)
+    }
+    
+    // Clear from row 2 onwards (keep headers)
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: spreadsheetId,
+      range: `${sheetName}!A2:Z${rows.length}`
+    });
+    
+    return true;
+  } catch (error) {
+    console.error(`❌ Failed to clear ${sheetName}:`, error.message);
+    return false;
+  }
+}
+
+/**
+ * Sync/Backfill all existing survey responses from Firestore to Google Sheets
+ * This will clear existing data and re-import from Firestore (single source of truth)
  * @param {object} db - Firestore database instance
- * @returns {Promise<object>} Summary of backfill operation
+ * @returns {Promise<object>} Summary of sync operation
  */
 async function backfillAllResponses(db) {
-  console.log('🔄 Backfilling data to Google Sheets...');
+  console.log('🔄 Syncing data from Firestore to Google Sheets...');
   
   if (!isConfigured && !initializeGoogleSheets()) {
     return { success: false, message: 'Not configured' };
@@ -369,12 +454,15 @@ async function backfillAllResponses(db) {
 
     await createAllSheets();
 
+    // Get all responses from Firestore (source of truth)
     const responsesSnapshot = await db.collection('survey_responses').get();
     
     if (responsesSnapshot.empty) {
-      return { success: true, message: 'No data to backfill' };
+      console.log('ℹ️  No data in Firestore to sync');
+      return { success: true, message: 'No data to sync' };
     }
 
+    // Get all users
     const usersSnapshot = await db.collection('users').get();
     const usersMap = {};
     usersSnapshot.forEach(doc => {
@@ -382,6 +470,7 @@ async function backfillAllResponses(db) {
       usersMap[userData.studentId] = userData;
     });
 
+    // Group responses by survey
     const responsesBySurvey = {};
     responsesSnapshot.forEach(doc => {
       const response = { id: doc.id, ...doc.data() };
@@ -395,31 +484,54 @@ async function backfillAllResponses(db) {
 
     let totalSuccess = 0;
     let totalFailed = 0;
+    let totalSkipped = 0;
 
+    console.log(`📊 Found ${responsesSnapshot.size} responses in Firestore`);
+
+    // Process each survey
     for (const [surveyId, responses] of Object.entries(responsesBySurvey)) {
+      const sheetName = SURVEY_SHEET_NAMES[surveyId] || surveyId;
+      console.log(`\n📋 Syncing ${sheetName}: ${responses.length} responses`);
+      
+      // Clear existing data in sheet to avoid duplicates
+      await clearSheetData(sheetName);
+      console.log(`   ✓ Cleared existing data`);
+      
+      // Re-import all responses from Firestore
       for (const response of responses) {
         const userData = usersMap[response.userId] || {};
         
         try {
-          const success = await appendSurveyResponse(surveyId, response, userData);
-          if (success) totalSuccess++; else totalFailed++;
+          // Don't check duplicates since we just cleared the sheet
+          const success = await appendSurveyResponse(surveyId, response, userData, false);
+          if (success) {
+            totalSuccess++;
+          } else {
+            totalFailed++;
+          }
+          
+          // Small delay to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
+          console.error(`   ❌ Error syncing response: ${error.message}`);
           totalFailed++;
         }
       }
+      
+      console.log(`   ✓ Synced ${responses.length} responses`);
     }
 
-    console.log(`✅ Backfill completed: ${totalSuccess}/${responsesSnapshot.size} exported`);
+    console.log(`\n✅ Sync completed: ${totalSuccess}/${responsesSnapshot.size} synced successfully`);
 
     return {
       success: true,
       total: responsesSnapshot.size,
-      exported: totalSuccess,
-      failed: totalFailed
+      synced: totalSuccess,
+      failed: totalFailed,
+      skipped: totalSkipped
     };
   } catch (error) {
-    console.error('❌ Backfill failed:', error.message);
+    console.error('❌ Sync failed:', error.message);
     return { success: false, message: error.message };
   }
 }
@@ -477,5 +589,6 @@ module.exports = {
   testConnection,
   backfillAllResponses,
   checkSheetsData,
+  clearSheetData,
   isConfigured: () => isConfigured
 };
