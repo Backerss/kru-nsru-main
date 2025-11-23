@@ -1132,16 +1132,33 @@ function initExportButtons() {
         const result = await response.json();
 
         if (result.success) {
-          Swal.fire({
-            icon: 'success',
-            title: 'Google Sheets พร้อมใช้งาน',
-            html: `<p>${result.message}</p>
-                   <p class="text-muted small mt-2">Spreadsheet: ${result.spreadsheet}</p>
-                   <a href="${result.url}" target="_blank" class="btn btn-sm btn-primary mt-2">
-                     <i class="bi bi-box-arrow-up-right me-1"></i>เปิด Spreadsheet
-                   </a>`,
-            confirmButtonText: 'ตกลง'
-          });
+          if (result.alreadyExists) {
+            // แผ่นงานมีข้อมูลแล้ว
+            Swal.fire({
+              icon: 'info',
+              title: 'แผ่นงานมีข้อมูลอยู่แล้ว',
+              html: `<p>แผ่นงานใน Google Sheets มีข้อมูลอยู่แล้ว</p>
+                     <p class="text-muted small mt-2">ระบบส่งข้อมูลอัตโนมัติเมื่อมีการตอบแบบสอบถาม</p>
+                     <p class="text-muted small">Spreadsheet: ${result.spreadsheet}</p>
+                     <a href="${result.url}" target="_blank" class="btn btn-sm btn-primary mt-2">
+                       <i class="bi bi-box-arrow-up-right me-1"></i>เปิด Spreadsheet เพื่อดูข้อมูล
+                     </a>`,
+              confirmButtonText: 'ตกลง',
+              width: '600px'
+            });
+          } else {
+            // Google Sheets พร้อมใช้งาน
+            Swal.fire({
+              icon: 'success',
+              title: 'Google Sheets พร้อมใช้งาน',
+              html: `<p>${result.message}</p>
+                     <p class="text-muted small mt-2">Spreadsheet: ${result.spreadsheet}</p>
+                     <a href="${result.url}" target="_blank" class="btn btn-sm btn-primary mt-2">
+                       <i class="bi bi-box-arrow-up-right me-1"></i>เปิด Spreadsheet
+                     </a>`,
+              confirmButtonText: 'ตกลง'
+            });
+          }
         } else {
           Swal.fire({
             icon: 'warning',
@@ -1215,19 +1232,8 @@ function initExportButtons() {
   const createAllSheetsBtn = document.getElementById('createAllSheets');
   if (createAllSheetsBtn) {
     createAllSheetsBtn.addEventListener('click', async function () {
-      const confirmation = await Swal.fire({
-        title: 'สร้างแผ่นงานทั้งหมด?',
-        text: 'จะสร้างแผ่นงาน 5 แผ่น (Ethical Knowledge, TCK, TK, TPACK, TPK) ใน Spreadsheet',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'สร้าง',
-        cancelButtonText: 'ยกเลิก'
-      });
-
-      if (!confirmation.isConfirmed) return;
-
       Swal.fire({
-        title: 'กำลังสร้างแผ่นงาน...',
+        title: 'กำลังตรวจสอบแผ่นงาน...',
         allowOutsideClick: false,
         showConfirmButton: false,
         didOpen: () => {
@@ -1246,12 +1252,35 @@ function initExportButtons() {
         const result = await response.json();
 
         if (result.success) {
-          Swal.fire({
-            icon: 'success',
-            title: 'สำเร็จ!',
-            text: result.message,
-            confirmButtonText: 'ตกลง'
-          });
+          if (result.alreadyExists) {
+            // แผ่นงานมีข้อมูลแล้ว
+            const sheetNames = [];
+            if (result.sheets) {
+              for (const [id, sheet] of Object.entries(result.sheets)) {
+                if (sheet.hasData) {
+                  sheetNames.push(sheet.name);
+                }
+              }
+            }
+            
+            Swal.fire({
+              icon: 'info',
+              title: 'แผ่นงานมีข้อมูลอยู่แล้ว',
+              html: `<p>แผ่นงานใน Google Sheets มีข้อมูลอยู่แล้ว</p>
+                     <p class="text-muted small mt-2">แผ่นงานที่มีข้อมูล: <strong>${sheetNames.join(', ')}</strong></p>
+                     <p class="text-muted small">คุณสามารถเปิดดูข้อมูลได้เลย</p>`,
+              confirmButtonText: 'ตกลง',
+              width: '600px'
+            });
+          } else {
+            // สร้างแผ่นงานสำเร็จ
+            Swal.fire({
+              icon: 'success',
+              title: 'สำเร็จ!',
+              text: result.message,
+              confirmButtonText: 'ตกลง'
+            });
+          }
         } else {
           Swal.fire({
             icon: 'error',

@@ -747,12 +747,28 @@ router.get('/api/sheets/test', async (req, res) => {
 router.post('/api/sheets/create-all', async (req, res) => {
   try {
     const googleSheets = require('../utils/googleSheets');
+    
+    // Check if sheets already have data
+    const dataCheck = await googleSheets.checkSheetsData();
+    
+    if (dataCheck.success && dataCheck.hasAnyData) {
+      // Sheets already have data
+      return res.json({ 
+        success: true,
+        alreadyExists: true,
+        message: 'แผ่นงานมีข้อมูลอยู่แล้ว',
+        sheets: dataCheck.sheets
+      });
+    }
+    
+    // Create sheets
     const success = await googleSheets.createAllSheets();
     
     if (success) {
       res.json({ 
-        success: true, 
-        message: 'สร้างแผ่นงานสำเร็จ (หรือมีอยู่แล้ว)' 
+        success: true,
+        alreadyExists: false,
+        message: 'สร้างแผ่นงานสำเร็จ' 
       });
     } else {
       res.status(500).json({ 
@@ -780,12 +796,27 @@ router.post('/api/export-to-sheets', async (req, res) => {
       });
     }
 
+    // Check if sheets have data
+    const dataCheck = await googleSheets.checkSheetsData();
+    
+    if (dataCheck.success && dataCheck.hasAnyData) {
+      const testResult = await googleSheets.testConnection();
+      return res.json({ 
+        success: true,
+        alreadyExists: true,
+        message: 'แผ่นงานมีข้อมูลอยู่แล้ว - ระบบส่งข้อมูลอัตโนมัติเมื่อมีการตอบแบบสอบถาม',
+        spreadsheet: testResult.spreadsheetTitle,
+        url: testResult.spreadsheetUrl
+      });
+    }
+
     // Test connection
     const testResult = await googleSheets.testConnection();
     
     if (testResult.success) {
       res.json({ 
-        success: true, 
+        success: true,
+        alreadyExists: false,
         message: 'Google Sheets พร้อมใช้งาน - ระบบจะส่งข้อมูลอัตโนมัติเมื่อมีการตอบแบบสอบถาม',
         spreadsheet: testResult.spreadsheetTitle,
         url: testResult.spreadsheetUrl

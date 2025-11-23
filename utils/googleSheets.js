@@ -10,34 +10,20 @@ let serviceAccount;
 
 try {
   serviceAccount = JSON.parse(fs.readFileSync(SERVICE_ACCOUNT_PATH, 'utf8'));
-  console.log('✅ Service account loaded:', serviceAccount.client_email);
 } catch (error) {
-  console.error('❌ Google Sheets: Service account file not found or invalid:', error.message);
-  console.error('   Expected path:', SERVICE_ACCOUNT_PATH);
+  console.error('❌ Google Sheets: Service account file not found');
 }
 
 // Spreadsheet ID will be set by admin (store in env or config)
 function getSpreadsheetId() {
-  const id = process.env.GOOGLE_SHEETS_SPREADSHEET_ID || null;
-  if (!id) {
-    console.error('❌ GOOGLE_SHEETS_SPREADSHEET_ID is not set in environment');
-    console.error('   Current env keys:', Object.keys(process.env).filter(k => k.includes('GOOGLE')).join(', '));
-  }
-  return id;
+  return process.env.GOOGLE_SHEETS_SPREADSHEET_ID || null;
 }
 // Initialize Google Sheets API client
 let sheets = null;
 let isConfigured = false;
 
 function initializeGoogleSheets() {
-  if (!serviceAccount) {
-    console.warn('⚠️  Google Sheets: Service account not loaded');
-    return false;
-  }
-
-  const spreadsheetId = getSpreadsheetId();
-  if (!spreadsheetId) {
-    console.warn('⚠️  Google Sheets: SPREADSHEET_ID not set in environment');
+  if (!serviceAccount || !getSpreadsheetId()) {
     return false;
   }
 
@@ -49,10 +35,9 @@ function initializeGoogleSheets() {
 
     sheets = google.sheets({ version: 'v4', auth });
     isConfigured = true;
-    console.log('✅ Google Sheets API initialized successfully');
     return true;
   } catch (error) {
-    console.error('❌ Error initializing Google Sheets:', error.message);
+    console.error('❌ Google Sheets initialization failed');
     return false;
   }
 }
@@ -83,16 +68,12 @@ const SURVEY_FILES = {
 function loadSurveyQuestions(surveyId) {
   try {
     const filename = SURVEY_FILES[surveyId];
-    if (!filename) {
-      console.warn(`⚠️  Unknown survey ID: ${surveyId}`);
-      return [];
-    }
+    if (!filename) return [];
 
     const surveyPath = path.join(__dirname, '..', 'data', 'surveys', filename);
     const surveyData = JSON.parse(fs.readFileSync(surveyPath, 'utf8'));
     return surveyData.questions || [];
   } catch (error) {
-    console.error(`❌ Error loading survey questions for ${surveyId}:`, error.message);
     return [];
   }
 }
@@ -125,8 +106,6 @@ async function appendSurveyResponse(surveyId, responseData, userData) {
       const existingHeaders = checkResponse.data.values?.[0] || [];
       
       if (existingHeaders.length === 0) {
-        // Sheet is empty, add headers first
-        console.log(`📋 Adding headers to ${sheetName}...`);
         const questions = loadSurveyQuestions(surveyId);
         const questionHeaders = questions.map((q, idx) => `Q${q.id}: ${q.question.substring(0, 50)}`);
         
@@ -150,11 +129,9 @@ async function appendSurveyResponse(surveyId, responseData, userData) {
             values: [headers]
           }
         });
-        
-        console.log(`✅ Headers added to ${sheetName}`);
       }
     } catch (headerError) {
-      console.warn('⚠️  Could not check/add headers:', headerError.message);
+      // Headers check failed, continue anyway
     }
     
     const timestamp = new Date().toISOString();
@@ -201,18 +178,10 @@ async function appendSurveyResponse(surveyId, responseData, userData) {
       }
     });
 
-    console.log(`✅ Appended response to Google Sheets: ${surveyId} (${userData.studentId})`);
     return true;
 
   } catch (error) {
-    console.error('❌ Error appending to Google Sheets:', error.message);
-    
-    // Log detailed error for debugging
-    if (error.code === 404) {
-      console.error(`   Sheet "${SURVEY_SHEET_NAMES[surveyId]}" not found in spreadsheet`);
-    } else if (error.code === 403) {
-      console.error('   Permission denied - check service account has Editor access');
-    }
+    console.error(`❌ Failed to append to ${surveyId}:`, error.message);
     
     return false;
   }
@@ -254,7 +223,6 @@ async function ensureSheetHeaders(surveyId, questionHeaders) {
     const existingHeaders = response.data.values?.[0] || [];
     
     if (existingHeaders.length === 0) {
-      // No headers, add them
       await sheets.spreadsheets.values.update({
         spreadsheetId: spreadsheetId,
         range: range,
@@ -263,12 +231,10 @@ async function ensureSheetHeaders(surveyId, questionHeaders) {
           values: [headers]
         }
       });
-      console.log(`✅ Added headers to sheet: ${sheetName}`);
     }
 
     return true;
   } catch (error) {
-    console.error('❌ Error ensuring sheet headers:', error.message);
     return false;
   }
 }
@@ -279,12 +245,10 @@ async function ensureSheetHeaders(surveyId, questionHeaders) {
  */
 async function createAllSheets() {
   if (!isConfigured && !initializeGoogleSheets()) {
-    console.log('❌ Cannot create sheets - Google Sheets not configured');
     return false;
   }
 
   try {
-    // Get existing sheets
     const spreadsheetId = getSpreadsheetId();
     const spreadsheet = await sheets.spreadsheets.get({
       spreadsheetId: spreadsheetId
@@ -292,7 +256,6 @@ async function createAllSheets() {
 
     const existingSheets = spreadsheet.data.sheets.map(s => s.properties.title);
 
-    // Create missing sheets
     const requests = [];
     Object.values(SURVEY_SHEET_NAMES).forEach(sheetName => {
       if (!existingSheets.includes(sheetName)) {
@@ -311,14 +274,10 @@ async function createAllSheets() {
         spreadsheetId: spreadsheetId,
         resource: { requests }
       });
-      console.log(`✅ Created ${requests.length} new sheet(s)`);
-    } else {
-      console.log('ℹ️  All sheets already exist');
     }
 
     return true;
   } catch (error) {
-    console.error('❌ Error creating sheets:', error.message);
     return false;
   }
 }
@@ -396,37 +355,26 @@ async function testConnection() {
  * @returns {Promise<object>} Summary of backfill operation
  */
 async function backfillAllResponses(db) {
-  console.log('\n🔄 Starting automatic backfill to Google Sheets...');
+  console.log('🔄 Backfilling data to Google Sheets...');
   
   if (!isConfigured && !initializeGoogleSheets()) {
-    console.log('⚠️  Skipping backfill - Google Sheets not configured');
     return { success: false, message: 'Not configured' };
   }
 
   try {
-    // Test connection first
     const testResult = await testConnection();
     if (!testResult.success) {
-      console.log('⚠️  Skipping backfill - Cannot connect to Google Sheets');
       return { success: false, message: testResult.message };
     }
 
-    console.log(`✅ Connected to: ${testResult.spreadsheetTitle}`);
-
-    // Create sheets if they don't exist
     await createAllSheets();
 
-    // Get all responses from Firestore
     const responsesSnapshot = await db.collection('survey_responses').get();
     
     if (responsesSnapshot.empty) {
-      console.log('ℹ️  No responses to backfill');
       return { success: true, message: 'No data to backfill' };
     }
 
-    console.log(`📥 Found ${responsesSnapshot.size} responses in Firestore`);
-
-    // Get all users
     const usersSnapshot = await db.collection('users').get();
     const usersMap = {};
     usersSnapshot.forEach(doc => {
@@ -434,7 +382,6 @@ async function backfillAllResponses(db) {
       usersMap[userData.studentId] = userData;
     });
 
-    // Group by survey
     const responsesBySurvey = {};
     responsesSnapshot.forEach(doc => {
       const response = { id: doc.id, ...doc.data() };
@@ -446,47 +393,24 @@ async function backfillAllResponses(db) {
       responsesBySurvey[surveyId].push(response);
     });
 
-    // Backfill each survey
     let totalSuccess = 0;
     let totalFailed = 0;
 
     for (const [surveyId, responses] of Object.entries(responsesBySurvey)) {
-      console.log(`\n📊 Backfilling ${surveyId}: ${responses.length} responses`);
-
       for (const response of responses) {
         const userData = usersMap[response.userId] || {};
         
         try {
-          const success = await appendSurveyResponse(
-            surveyId,
-            response,
-            userData
-          );
-
-          if (success) {
-            totalSuccess++;
-          } else {
-            totalFailed++;
-          }
-
-          // Small delay to avoid rate limiting
+          const success = await appendSurveyResponse(surveyId, response, userData);
+          if (success) totalSuccess++; else totalFailed++;
           await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
-          console.error(`   ❌ Error: ${error.message}`);
           totalFailed++;
         }
       }
     }
 
-    console.log('\n' + '='.repeat(60));
-    console.log('📈 Backfill Summary:');
-    console.log(`   Total responses: ${responsesSnapshot.size}`);
-    console.log(`   Successfully exported: ${totalSuccess}`);
-    if (totalFailed > 0) {
-      console.log(`   Failed: ${totalFailed}`);
-    }
-    console.log('='.repeat(60));
-    console.log('✅ Backfill completed!\n');
+    console.log(`✅ Backfill completed: ${totalSuccess}/${responsesSnapshot.size} exported`);
 
     return {
       success: true,
@@ -495,7 +419,53 @@ async function backfillAllResponses(db) {
       failed: totalFailed
     };
   } catch (error) {
-    console.error('\n❌ Backfill failed:', error.message);
+    console.error('❌ Backfill failed:', error.message);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Check if sheets have data
+ * @returns {Promise<object>} Status of each sheet
+ */
+async function checkSheetsData() {
+  if (!isConfigured && !initializeGoogleSheets()) {
+    return { success: false, message: 'Not configured' };
+  }
+
+  try {
+    const spreadsheetId = getSpreadsheetId();
+    const sheetStatus = {};
+    let hasAnyData = false;
+
+    for (const [surveyId, sheetName] of Object.entries(SURVEY_SHEET_NAMES)) {
+      try {
+        const response = await sheets.spreadsheets.values.get({
+          spreadsheetId: spreadsheetId,
+          range: `${sheetName}!A2:A2` // Check if row 2 exists (data after header)
+        });
+        
+        const hasData = response.data.values && response.data.values.length > 0;
+        sheetStatus[surveyId] = {
+          name: sheetName,
+          hasData: hasData
+        };
+        if (hasData) hasAnyData = true;
+      } catch (error) {
+        sheetStatus[surveyId] = {
+          name: sheetName,
+          hasData: false,
+          error: 'Sheet not found'
+        };
+      }
+    }
+
+    return {
+      success: true,
+      hasAnyData: hasAnyData,
+      sheets: sheetStatus
+    };
+  } catch (error) {
     return { success: false, message: error.message };
   }
 }
@@ -506,5 +476,6 @@ module.exports = {
   createAllSheets,
   testConnection,
   backfillAllResponses,
+  checkSheetsData,
   isConfigured: () => isConfigured
 };
