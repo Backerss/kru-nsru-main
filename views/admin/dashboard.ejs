@@ -304,7 +304,18 @@
             </h5>
           </div>
           <div class="card-body">
-            <p class="text-muted mb-3">ส่งออกข้อมูลการตอบแบบสอบถามไปยัง Google Sheets</p>
+            <p class="text-muted mb-3">ส่งออกข้อมูลการตอบแบบสอบถาม</p>
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+              <button class="btn btn-success" id="exportAllExcel">
+                <i class="bi bi-file-earmark-excel me-2"></i>ดาวน์โหลดทั้งหมด (Excel)
+              </button>
+              <button class="btn btn-primary" id="testSheetsConnection">
+                <i class="bi bi-google me-2"></i>ทดสอบการเชื่อมต่อ Google Sheets
+              </button>
+              <button class="btn btn-info" id="createAllSheets">
+                <i class="bi bi-plus-circle me-2"></i>สร้างแผ่นงานทั้งหมด
+              </button>
+            </div>
             <div class="row g-3">
               <% 
               const surveyNames = {
@@ -325,12 +336,22 @@
                     <h6 class="mb-1"><%= surveyName %></h6>
                     <small class="text-muted"><%= count %> คำตอบ</small>
                   </div>
-                  <button class="btn btn-sm btn-primary export-btn" 
-                          data-survey-id="<%= surveyId %>"
-                          <%= count === 0 ? 'disabled' : '' %>>
-                    <i class="bi bi-file-earmark-spreadsheet me-1"></i>
-                    ส่งออก
-                  </button>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-sm btn-success export-excel-btn" 
+                            data-survey-id="<%= surveyId %>"
+                            <%= count === 0 ? 'disabled' : '' %>
+                            title="ดาวน์โหลด Excel">
+                      <i class="bi bi-file-earmark-excel me-1"></i>
+                      Excel
+                    </button>
+                    <button class="btn btn-sm btn-primary export-btn" 
+                            data-survey-id="<%= surveyId %>"
+                            <%= count === 0 ? 'disabled' : '' %>
+                            title="ส่งออกไป Google Sheets">
+                      <i class="bi bi-file-earmark-spreadsheet me-1"></i>
+                      Sheets
+                    </button>
+                  </div>
                 </div>
               </div>
               <% }); %>

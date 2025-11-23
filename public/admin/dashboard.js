@@ -1024,12 +1024,94 @@ function initUserManagement() {
 
 // Initialize Export Buttons
 function initExportButtons() {
+  // Excel export buttons (per survey)
+  document.querySelectorAll('.export-excel-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const surveyId = this.dataset.surveyId;
+      const surveyNames = {
+        'ethical-knowledge': 'ความรู้ด้านจริยธรรม',
+        'intelligent-tck': 'TCK',
+        'intelligent-tk': 'TK',
+        'intelligent-tpack': 'TPACK',
+        'intelligent-tpk': 'TPK'
+      };
+      const surveyName = surveyNames[surveyId] || surveyId;
+
+      Swal.fire({
+        title: 'กำลังสร้างไฟล์ Excel...',
+        text: `กำลังดาวน์โหลดข้อมูล: ${surveyName}`,
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // Download via hidden link
+      const downloadUrl = `/admin/export/xlsx?surveyId=${surveyId}`;
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `export-${surveyId}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Close loading after a short delay
+      setTimeout(() => {
+        Swal.close();
+        Swal.fire({
+          icon: 'success',
+          title: 'ดาวน์โหลดเรียบร้อย',
+          text: 'ไฟล์ Excel ถูกบันทึกลงเครื่องของคุณแล้ว',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }, 1500);
+    });
+  });
+
+  // Export all to Excel button
+  const exportAllExcelBtn = document.getElementById('exportAllExcel');
+  if (exportAllExcelBtn) {
+    exportAllExcelBtn.addEventListener('click', function () {
+      Swal.fire({
+        title: 'กำลังสร้างไฟล์ Excel...',
+        text: 'กำลังดาวน์โหลดข้อมูลทั้งหมด',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const downloadUrl = '/admin/export/xlsx?surveyId=all';
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'export-all.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(() => {
+        Swal.close();
+        Swal.fire({
+          icon: 'success',
+          title: 'ดาวน์โหลดเรียบร้อย',
+          text: 'ไฟล์ Excel ทั้งหมดถูกบันทึกลงเครื่องของคุณแล้ว',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }, 1500);
+    });
+  }
+
+  // Google Sheets export buttons (existing functionality)
   document.querySelectorAll('.export-btn').forEach(btn => {
     btn.addEventListener('click', async function () {
       const surveyId = this.dataset.surveyId;
 
       Swal.fire({
-        title: 'กำลังส่งออกข้อมูล...',
+        title: 'กำลังตรวจสอบ Google Sheets...',
         text: 'โปรดรอสักครู่',
         allowOutsideClick: false,
         showConfirmButton: false,
@@ -1049,15 +1131,24 @@ function initExportButtons() {
 
         const result = await response.json();
 
-        if (response.ok) {
+        if (result.success) {
           Swal.fire({
-            icon: 'info',
-            title: 'กำลังพัฒนา',
-            html: `<p>${result.message}</p><p class="text-muted small">${result.note}</p>`,
+            icon: 'success',
+            title: 'Google Sheets พร้อมใช้งาน',
+            html: `<p>${result.message}</p>
+                   <p class="text-muted small mt-2">Spreadsheet: ${result.spreadsheet}</p>
+                   <a href="${result.url}" target="_blank" class="btn btn-sm btn-primary mt-2">
+                     <i class="bi bi-box-arrow-up-right me-1"></i>เปิด Spreadsheet
+                   </a>`,
             confirmButtonText: 'ตกลง'
           });
         } else {
-          throw new Error(result.message);
+          Swal.fire({
+            icon: 'warning',
+            title: 'ยังไม่ได้ตั้งค่า',
+            html: `<p>${result.message}</p>${result.note ? `<p class="text-muted small">${result.note}</p>` : ''}`,
+            confirmButtonText: 'ตกลง'
+          });
         }
       } catch (error) {
         Swal.fire({
@@ -1068,4 +1159,113 @@ function initExportButtons() {
       }
     });
   });
+
+  // Test Google Sheets connection
+  const testSheetsBtn = document.getElementById('testSheetsConnection');
+  if (testSheetsBtn) {
+    testSheetsBtn.addEventListener('click', async function () {
+      Swal.fire({
+        title: 'กำลังทดสอบการเชื่อมต่อ...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      try {
+        const response = await fetch('/admin/api/sheets/test');
+        const result = await response.json();
+
+        if (result.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'เชื่อมต่อสำเร็จ!',
+            html: `
+              <div class="text-start">
+                <p><strong>Spreadsheet:</strong> ${result.spreadsheetTitle}</p>
+                <p><strong>จำนวนแผ่นงาน:</strong> ${result.sheetCount}</p>
+                <a href="${result.spreadsheetUrl}" target="_blank" class="btn btn-sm btn-primary mt-2">
+                  <i class="bi bi-box-arrow-up-right me-1"></i>เปิด Spreadsheet
+                </a>
+              </div>
+            `,
+            confirmButtonText: 'ตกลง'
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'เชื่อมต่อไม่สำเร็จ',
+            html: `<p>${result.message}</p>
+                   ${result.code ? `<p class="text-muted small">Error code: ${result.code}</p>` : ''}`,
+            confirmButtonText: 'ตกลง'
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: error.message
+        });
+      }
+    });
+  }
+
+  // Create all sheets
+  const createAllSheetsBtn = document.getElementById('createAllSheets');
+  if (createAllSheetsBtn) {
+    createAllSheetsBtn.addEventListener('click', async function () {
+      const confirmation = await Swal.fire({
+        title: 'สร้างแผ่นงานทั้งหมด?',
+        text: 'จะสร้างแผ่นงาน 5 แผ่น (Ethical Knowledge, TCK, TK, TPACK, TPK) ใน Spreadsheet',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'สร้าง',
+        cancelButtonText: 'ยกเลิก'
+      });
+
+      if (!confirmation.isConfirmed) return;
+
+      Swal.fire({
+        title: 'กำลังสร้างแผ่นงาน...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      try {
+        const response = await fetch('/admin/api/sheets/create-all', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'สำเร็จ!',
+            text: result.message,
+            confirmButtonText: 'ตกลง'
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: result.message
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: error.message
+        });
+      }
+    });
+  }
 }

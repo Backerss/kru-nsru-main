@@ -346,6 +346,14 @@ router.post('/submit/:id', async (req, res) => {
       timestamp: responseData.submittedAt 
     });
 
+    // Push to Google Sheets (async, don't block response)
+    const googleSheets = require('../utils/googleSheets');
+    if (googleSheets.isConfigured()) {
+      const userData = userDoc.exists ? userDoc.data() : {};
+      googleSheets.appendSurveyResponse(surveyId, responseData, userData)
+        .catch(err => console.error('Google Sheets append error:', err.message));
+    }
+
     res.json({
       success: true,
       message: 'ส่งแบบสอบถามสำเร็จ'

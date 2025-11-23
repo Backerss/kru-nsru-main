@@ -553,21 +553,252 @@ router.get('/api/analytics', async (req, res) => {
   }
 });
 
-// Export to Google Sheets
+// Export to Excel (XLSX)
+router.get('/export/xlsx', async (req, res) => {
+  try {
+    const { surveyId } = req.query; // 'all' or specific survey id
+    const db = req.app.get('db');
+    const ExcelJS = require('exceljs');
+    const fs = require('fs');
+    const path = require('path');
+
+    // Get survey definitions
+    const surveyFiles = {
+      'intelligent-tk': 'intelligent-tk.json',
+      'intelligent-tpk': 'intelligent-tpk.json',
+      'intelligent-tck': 'intelligent-tck.json',
+      'intelligent-tpack': 'intelligent-tpack.json',
+      'ethical-knowledge': 'ethical-knowledge.json'
+    };
+
+    const surveyDefinitions = {};
+    for (const [key, filename] of Object.entries(surveyFiles)) {
+      const filePath = path.join(__dirname, '..', 'data', 'surveys', filename);
+      surveyDefinitions[key] = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    }
+
+    // Get all responses
+    const responsesSnapshot = await db.collection('survey_responses').get();
+    const allResponses = [];
+    responsesSnapshot.forEach(doc => {
+      allResponses.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+
+    // Get users map
+    const usersSnapshot = await db.collection('users').get();
+    const usersMap = {};
+    usersSnapshot.forEach(doc => {
+      const userData = doc.data();
+      usersMap[userData.studentId] = userData;
+    });
+
+    // Filter responses by surveyId if specified
+    let responses = allResponses;
+    if (surveyId && surveyId !== 'all') {
+      responses = allResponses.filter(r => r.surveyId === surveyId);
+    }
+
+    // Create workbook
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'KRU-NSRU Survey System';
+    workbook.created = new Date();
+
+    // Determine which surveys to export
+    const surveysToExport = surveyId && surveyId !== 'all' 
+      ? [surveyId] 
+      : Object.keys(surveyFiles);
+
+    // Create a sheet for each survey
+    surveysToExport.forEach(sId => {
+      const surveyDef = surveyDefinitions[sId];
+      if (!surveyDef) return;
+
+      const surveyResponses = responses.filter(r => r.surveyId === sId);
+      if (surveyResponses.length === 0) return;
+
+      const worksheet = workbook.addWorksheet(surveyDef.title.substring(0, 30)); // Excel sheet name limit
+
+      // Build header row
+      const headers = [
+        'Timestamp',
+        'รหัสนักศึกษา',
+        'ชื่อ-นามสกุล',
+        'อีเมล',
+        'คณะ',
+        'สาขา',
+        'ชั้นปี',
+        'Role'
+      ];
+
+      // Add question columns
+      surveyDef.questions.forEach(q => {
+        const colName = q.type === 'rating' 
+          ? `Q${q.id}: ${q.question.substring(0, 100)}` 
+          : `Q${q.id} (Text): ${q.question.substring(0, 80)}`;
+        headers.push(colName);
+      });
+
+      worksheet.addRow(headers);
+
+      // Style header row
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4472C4' }
+      };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      headerRow.height = 30;
+
+      // Add data rows
+      surveyResponses.forEach(response => {
+        const user = usersMap[response.userId] || {};
+        const rowData = [
+          response.submittedAt || '',
+          response.userId || '',
+          `${user.prefix || ''}${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          user.email || '',
+          user.faculty || '',
+          user.major || '',
+          user.year || '',
+          user.role || 'student'
+        ];
+
+        // Add answers
+        const answers = response.answers || {};
+        surveyDef.questions.forEach(q => {
+          const answerKey = `question_${q.id}`;
+          const answer = answers[answerKey];
+          
+          if (q.type === 'rating') {
+            rowData.push(typeof answer === 'number' ? answer : '');
+          } else {
+            rowData.push(answer || '');
+          }
+        });
+
+        worksheet.addRow(rowData);
+      });
+
+      // Auto-fit columns
+      worksheet.columns.forEach((column, index) => {
+        if (index < 8) {
+          column.width = 20;
+        } else {
+          column.width = 40;
+        }
+      });
+
+      // Freeze header row
+      worksheet.views = [{ state: 'frozen', ySplit: 1 }];
+    });
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    const filename = surveyId && surveyId !== 'all'
+      ? `kru-nsru-export-${surveyId}-${timestamp}.xlsx`
+      : `kru-nsru-export-all-${timestamp}.xlsx`;
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    // Write to response
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    console.error('Error exporting to Excel:', error);
+    res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาดในการส่งออกข้อมูล', error: error.message });
+  }
+});
+
+// Test Google Sheets connection
+router.get('/api/sheets/test', async (req, res) => {
+  try {
+    // Force reload to get fresh env
+    delete require.cache[require.resolve('../utils/googleSheets')];
+    const googleSheets = require('../utils/googleSheets');
+    
+    console.log('=== Google Sheets Test ===');
+    console.log('Environment check:');
+    console.log('  GOOGLE_SHEETS_SPREADSHEET_ID:', process.env.GOOGLE_SHEETS_SPREADSHEET_ID ? 'Set ✅' : 'Missing ❌');
+    
+    const result = await googleSheets.testConnection();
+    console.log('Test result:', result);
+    console.log('==========================');
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error testing Google Sheets:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message,
+      stack: error.stack 
+    });
+  }
+});
+
+// Create sheets for all surveys
+router.post('/api/sheets/create-all', async (req, res) => {
+  try {
+    const googleSheets = require('../utils/googleSheets');
+    const success = await googleSheets.createAllSheets();
+    
+    if (success) {
+      res.json({ 
+        success: true, 
+        message: 'สร้างแผ่นงานสำเร็จ (หรือมีอยู่แล้ว)' 
+      });
+    } else {
+      res.status(500).json({ 
+        success: false, 
+        message: 'ไม่สามารถสร้างแผ่นงานได้' 
+      });
+    }
+  } catch (error) {
+    console.error('Error creating sheets:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Export to Google Sheets (legacy - now automatic on submit)
 router.post('/api/export-to-sheets', async (req, res) => {
   try {
     const { surveyId } = req.body;
+    const googleSheets = require('../utils/googleSheets');
     
-    // TODO: Implement Google Sheets API integration
-    // This requires setting up Google Sheets API credentials
+    if (!googleSheets.isConfigured()) {
+      return res.json({ 
+        success: false, 
+        message: 'Google Sheets ยังไม่ได้ตั้งค่า',
+        note: 'กรุณาตั้งค่า GOOGLE_SHEETS_SPREADSHEET_ID ใน environment variables'
+      });
+    }
+
+    // Test connection
+    const testResult = await googleSheets.testConnection();
     
-    res.json({ 
-      success: true, 
-      message: 'กำลังพัฒนาฟีเจอร์นี้',
-      note: 'ต้องตั้งค่า Google Sheets API ก่อน'
-    });
+    if (testResult.success) {
+      res.json({ 
+        success: true, 
+        message: 'Google Sheets พร้อมใช้งาน - ระบบจะส่งข้อมูลอัตโนมัติเมื่อมีการตอบแบบสอบถาม',
+        spreadsheet: testResult.spreadsheetTitle,
+        url: testResult.spreadsheetUrl
+      });
+    } else {
+      res.json({
+        success: false,
+        message: 'ไม่สามารถเชื่อมต่อ Google Sheets ได้',
+        error: testResult.message
+      });
+    }
   } catch (error) {
-    console.error('Error exporting to sheets:', error);
+    console.error('Error with Google Sheets:', error);
     res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาด' });
   }
 });

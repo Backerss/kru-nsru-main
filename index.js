@@ -73,4 +73,10 @@ app.listen(port, async () => {
   
   // Verify email configuration
   await verifyEmailConfig();
+  
+  // Auto-backfill existing data to Google Sheets (run once on startup)
+  setTimeout(async () => {
+    const googleSheets = require('./utils/googleSheets');
+    await googleSheets.backfillAllResponses(db);
+  }, 2000); // Wait 2 seconds for server to fully start
 });
