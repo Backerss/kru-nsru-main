@@ -53,12 +53,38 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Root redirect
+// Root redirect - Show landing page
 app.get('/', (req, res) => {
   if (req.session.userId) {
     res.redirect('/survey/home');
   } else {
-    res.redirect('/login');
+    // Load survey data from JSON files
+    const fs = require('fs');
+    const surveys = [
+      'ethical-knowledge',
+      'intelligent-tk',
+      'intelligent-tck',
+      'intelligent-tpk',
+      'intelligent-tpack'
+    ].map(surveyId => {
+      try {
+        const surveyPath = path.join(__dirname, 'data', 'surveys', `${surveyId}.json`);
+        const surveyData = JSON.parse(fs.readFileSync(surveyPath, 'utf8'));
+        return {
+          id: surveyData.id,
+          title: surveyData.title,
+          description: surveyData.description,
+          icon: surveyData.icon || 'clipboard-check',
+          questionCount: surveyData.questionCount || surveyData.questions?.length || 0,
+          duration: surveyData.duration || '10'
+        };
+      } catch (error) {
+        console.error(`Error loading survey ${surveyId}:`, error);
+        return null;
+      }
+    }).filter(s => s !== null);
+    
+    res.render('index', { surveys });
   }
 });
 

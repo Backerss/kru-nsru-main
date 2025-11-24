@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#2C08C9">
+  <meta name="description" content="ระบบประเมินสมรรถนะ TPACK สำหรับอาจารย์และนักศึกษาครู - วิจัยและพัฒนาการเรียนการสอนด้วยเทคโนโลยี">
+  <title>ระบบประเมินสมรรถนะ TPACK | มหาวิทยาลัยราชภัฏนครสวรรค์</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="/colors.css">
+  <link rel="stylesheet" href="/landing.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="/">
+        <div class="logo-container">
+          <img src="/images/university-logo.png" alt="มหาวิทยาลัยราชภัฏนครสวรรค์" class="logo-img">
+        </div>
+        <div class="brand-text ms-3">
+          <div class="brand-title">ระบบประเมินสมรรถนะ TPACK</div>
+          <div class="brand-subtitle">มหาวิทยาลัยราชภัฏนครสวรรค์</div>
+        </div>
+      </a>
+      
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="#about">เกี่ยวกับ</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#features">ฟีเจอร์</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#surveys">แบบสอบถาม</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#contact">ติดต่อ</a>
+          </li>
+          <li class="nav-item ms-lg-3">
+            <a class="btn btn-light btn-sm px-4" href="/login">
+              <i class="bi bi-box-arrow-in-right me-2"></i>เข้าสู่ระบบ
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-bg-animation"></div>
+    <div class="container">
+      <div class="row align-items-center min-vh-100 py-5">
+        <div class="col-lg-6 hero-content" data-aos="fade-right">
+          <div class="hero-badge mb-4">
+            <i class="bi bi-stars me-2"></i>
+            <span>ระบบประเมินสมรรถนะออนไลน์</span>
+          </div>
+          
+          <h1 class="hero-title mb-4">
+            ยกระดับการเรียนการสอน<br>
+            ด้วย <span class="highlight">TPACK Framework</span>
+          </h1>
+          
+          <p class="hero-description mb-5">
+            ระบบประเมินและวิเคราะห์สมรรถนะด้านเทคโนโลยีการสอน (TPACK) 
+            สำหรับอาจารย์และนักศึกษาครู พัฒนาโดยคณะครุศาสตร์ 
+            มหาวิทยาลัยราชภัฏนครสวรรค์
+          </p>
+          
+          <div class="hero-cta">
+            <a href="/register" class="btn btn-hero btn-primary btn-lg px-5 py-3 me-3">
+              <i class="bi bi-person-plus me-2"></i>เริ่มต้นใช้งาน
+            </a>
+            <a href="#about" class="btn btn-hero btn-outline-light btn-lg px-5 py-3">
+              <i class="bi bi-info-circle me-2"></i>เรียนรู้เพิ่มเติม
+            </a>
+          </div>
+          
+          <div class="hero-stats mt-5">
+            <div class="stat-item">
+              <div class="stat-number" data-count="500">0</div>
+              <div class="stat-label">ผู้ใช้งาน</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" data-count="5">0</div>
+              <div class="stat-label">แบบสอบถาม</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" data-count="95">0</div>
+              <div class="stat-label">ความพึงพอใจ %</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-lg-6 hero-visual" data-aos="fade-left">
+          <div class="visual-container">
+            <div class="floating-card card-1">
+              <i class="bi bi-graph-up-arrow"></i>
+              <span>วิเคราะห์ผล</span>
+            </div>
+            <div class="floating-card card-2">
+              <i class="bi bi-clipboard-data"></i>
+              <span>แบบสอบถาม</span>
+            </div>
+            <div class="main-visual">
+              <div class="visual-circle circle-1"></div>
+              <div class="visual-circle circle-2"></div>
+              <div class="visual-circle circle-3"></div>
+              <div class="visual-icon">
+                <i class="bi bi-mortarboard-fill"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="scroll-indicator">
+      <a href="#about">
+        <i class="bi bi-chevron-down"></i>
+      </a>
+    </div>
+  </section>
+
+  <!-- Logos Section -->
+  <section class="logos-section py-5">
+    <div class="container">
+      <div class="row align-items-center justify-content-center text-center g-4">
+        <div class="col-6 col-md-3" data-aos="zoom-in" data-aos-delay="100">
+          <div class="logo-box">
+            <img src="/images/university-logo.png" alt="มหาวิทยาลัย" class="institution-logo">
+            <p class="logo-label mt-3">มหาวิทยาลัยราชภัฏนครสวรรค์</p>
+          </div>
+        </div>
+        <div class="col-6 col-md-3" data-aos="zoom-in" data-aos-delay="200">
+          <div class="logo-box">
+            <img src="/images/faculty-logo.png" alt="คณะครุศาสตร์" class="institution-logo">
+            <p class="logo-label mt-3">คณะครุศาสตร์</p>
+          </div>
+        </div>
+        <div class="col-6 col-md-3" data-aos="zoom-in" data-aos-delay="300">
+          <div class="logo-box">
+            <img src="/images/department-logo.png" alt="สาขา" class="institution-logo">
+            <p class="logo-label mt-3">สาขาวิชาเทคโนโลยีการศึกษา</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="about-section py-5">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-6 mb-5 mb-lg-0" data-aos="fade-right">
+          <div class="about-image-container">
+            <div class="about-image-bg"></div>
+            <div class="about-icon-wrapper">
+              <i class="bi bi-lightbulb-fill"></i>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-lg-6" data-aos="fade-left">
+          <div class="section-badge mb-3">
+            <i class="bi bi-info-circle me-2"></i>เกี่ยวกับระบบ
+          </div>
+          
+          <h2 class="section-title mb-4">
+            ระบบประเมินสมรรถนะ<br>
+            <span class="text-primary">TPACK</span> คืออะไร?
+          </h2>
+          
+          <p class="text-muted mb-4">
+            <strong>TPACK (Technological Pedagogical Content Knowledge)</strong> 
+            เป็นกรอบแนวคิดสำหรับการบูรณาการเทคโนโลยีเข้ากับการเรียนการสอน 
+            ที่ช่วยให้ครูผู้สอนสามารถใช้เทคโนโลยีได้อย่างมีประสิทธิภาพ
+          </p>
+          
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="bi bi-check-circle-fill"></i>
+              </div>
+              <div class="feature-content">
+                <h5>ประเมินสมรรถนะครบถ้วน</h5>
+                <p class="text-muted mb-0">วัดผลความรู้ด้านเนื้อหา วิธีการสอน และเทคโนโลยีแบบบูรณาการ</p>
+              </div>
+            </div>
+            
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="bi bi-graph-up"></i>
+              </div>
+              <div class="feature-content">
+                <h5>วิเคราะห์ผลแบบเรียลไทม์</h5>
+                <p class="text-muted mb-0">รับผลการประเมินและข้อเสนอแนะทันที พร้อมกราฟแสดงผล</p>
+              </div>
+            </div>
+            
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="bi bi-shield-check"></i>
+              </div>
+              <div class="feature-content">
+                <h5>ปลอดภัยและเป็นส่วนตัว</h5>
+                <p class="text-muted mb-0">ข้อมูลของคุณได้รับการปกป้องด้วยมาตรฐานสูงสุด</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features-section py-5">
+    <div class="container">
+      <div class="text-center mb-5" data-aos="fade-up">
+        <div class="section-badge mb-3">
+          <i class="bi bi-star me-2"></i>ฟีเจอร์ที่โดดเด่น
+        </div>
+        <h2 class="section-title mb-3">ทำไมต้องเลือกใช้ระบบของเรา?</h2>
+        <p class="text-muted mx-auto" style="max-width: 600px;">
+          ระบบที่ออกแบบมาเพื่อความสะดวก รวดเร็ว และแม่นยำ พร้อมฟีเจอร์ครบครันสำหรับการประเมินและพัฒนา
+        </p>
+      </div>
+      
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="100">
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <i class="bi bi-phone"></i>
+            </div>
+            <h4>ใช้งานง่าย ทุกอุปกรณ์</h4>
+            <p class="text-muted">
+              รองรับการใช้งานบนมือถือ แท็บเล็ต และคอมพิวเตอร์ 
+              ตอบแบบสอบถามได้ทุกที่ทุกเวลา
+            </p>
+          </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="200">
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <i class="bi bi-speedometer2"></i>
+            </div>
+            <h4>รวดเร็วและแม่นยำ</h4>
+            <p class="text-muted">
+              ระบบคำนวณผลแบบอัตโนมัติ ได้ผลทันทีหลังตอบเสร็จ 
+              พร้อมรายงานแบบครบถ้วน
+            </p>
+          </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="300">
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <i class="bi bi-bar-chart-line"></i>
+            </div>
+            <h4>วิเคราะห์เชิงลึก</h4>
+            <p class="text-muted">
+              แดชบอร์ดแสดงผลแบบกราฟ เปรียบเทียบผลตามกลุ่ม 
+              และแนะนำจุดที่ควรพัฒนา
+            </p>
+          </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="400">
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <i class="bi bi-cloud-arrow-up"></i>
+            </div>
+            <h4>บันทึกอัตโนมัติ</h4>
+            <p class="text-muted">
+              ข้อมูลถูกบันทึกทันทีที่ตอบแต่ละข้อ 
+              ไม่ต้องกังวลเรื่องข้อมูลสูญหาย
+            </p>
+          </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="500">
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <i class="bi bi-people"></i>
+            </div>
+            <h4>จัดการผู้ใช้ง่าย</h4>
+            <p class="text-muted">
+              ระบบแอดมินสำหรับจัดการผู้ใช้ ส่งออกข้อมูล 
+              และดูสถิติแบบรวมได้ง่ายดาย
+            </p>
+          </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="600">
+          <div class="feature-card">
+            <div class="feature-card-icon">
+              <i class="bi bi-file-earmark-spreadsheet"></i>
+            </div>
+            <h4>ส่งออกข้อมูล</h4>
+            <p class="text-muted">
+              ดาวน์โหลดผลการประเมินเป็น Excel หรือซิงค์ไปยัง 
+              Google Sheets อัตโนมัติ
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Surveys Section -->
+  <section id="surveys" class="surveys-section py-5">
+    <div class="container">
+      <div class="text-center mb-5" data-aos="fade-up">
+        <div class="section-badge mb-3">
+          <i class="bi bi-clipboard-check me-2"></i>แบบสอบถาม
+        </div>
+        <h2 class="section-title mb-3">แบบสอบถามที่มีในระบบ</h2>
+        <p class="text-muted mx-auto" style="max-width: 600px;">
+          ครอบคลุมทุกมิติของ TPACK Framework และจริยธรรมครูในยุคดิจิทัล
+        </p>
+      </div>
+      
+      <div class="row g-4">
+        <% if (surveys && surveys.length > 0) { %>
+          <% surveys.forEach((survey, index) => { %>
+            <div class="col-md-6 col-lg-4" data-aos="zoom-in" data-aos-delay="<%= (index + 1) * 100 %>">
+              <div class="survey-card <%= survey.id === 'intelligent-tpack' ? 'survey-card-highlight' : '' %>">
+                <div class="survey-icon">
+                  <i class="bi bi-<%= survey.icon %>"></i>
+                </div>
+                <h4><%= survey.title.replace('แบบประเมิน ', '') %></h4>
+                <p class="text-muted">
+                  <%= survey.description %>
+                </p>
+                <div class="survey-meta">
+                  <span><i class="bi bi-question-circle me-1"></i> <%= survey.questionCount %> ข้อ</span>
+                  <span><i class="bi bi-clock me-1"></i> <%= survey.duration %> นาที</span>
+                </div>
+                <% if (survey.id === 'intelligent-tpack') { %>
+                  <div class="survey-badge">แนะนำ</div>
+                <% } %>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <div class="col-12 text-center">
+            <p class="text-muted">ไม่มีข้อมูลแบบสอบถาม</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section py-5">
+    <div class="container">
+      <div class="cta-card" data-aos="zoom-in">
+        <div class="row align-items-center">
+          <div class="col-lg-8 text-center text-lg-start mb-4 mb-lg-0">
+            <h2 class="cta-title mb-3">พร้อมเริ่มต้นแล้วหรือยัง?</h2>
+            <p class="cta-description mb-0">
+              ลงทะเบียนวันนี้ เริ่มประเมินสมรรถนะของคุณ และรับข้อเสนอแนะเพื่อพัฒนาตัวเองในฐานะครูยุคใหม่
+            </p>
+          </div>
+          <div class="col-lg-4 text-center text-lg-end">
+            <a href="/register" class="btn btn-light btn-lg px-5 py-3">
+              <i class="bi bi-rocket-takeoff me-2"></i>เริ่มต้นเลย
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="contact-section py-5">
+    <div class="container">
+      <div class="text-center mb-5" data-aos="fade-up">
+        <div class="section-badge mb-3">
+          <i class="bi bi-envelope me-2"></i>ติดต่อเรา
+        </div>
+        <h2 class="section-title mb-3">ต้องการความช่วยเหลือ?</h2>
+        <p class="text-muted mx-auto" style="max-width: 600px;">
+          หากมีข้อสงสัยหรือต้องการคำแนะนำ ติดต่อเราได้ที่
+        </p>
+      </div>
+      
+      <div class="row g-4 justify-content-center">
+        <div class="col-md-6 col-lg-4" data-aos="fade-up">
+          <div class="contact-card">
+            <div class="contact-icon">
+              <i class="bi bi-envelope-fill"></i>
+            </div>
+            <h5>ติดต่อเรา</h5>
+            <p class="text-muted mb-0">
+              <a href="mailto:asan.r@nsru.ac.th" class="text-decoration-none">asan.r@nsru.ac.th</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+  <!-- Footer -->
+  <footer class="footer py-5">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-lg-4 mb-4 mb-lg-0">
+          <div class="footer-brand mb-3">
+            <img src="/images/university-logo.png" alt="Logo" class="footer-logo mb-3">
+            <h5>ระบบประเมินสมรรถนะ TPACK</h5>
+          </div>
+          <p class="text-muted small">
+            ระบบประเมินและวิเคราะห์สมรรถนะด้านเทคโนโลยีการสอน 
+            สำหรับอาจารย์และนักศึกษาครู
+          </p>
+          <div class="social-links mt-3">
+            <a href="#" class="social-link"><i class="bi bi-facebook"></i></a>
+            <a href="#" class="social-link"><i class="bi bi-twitter"></i></a>
+            <a href="#" class="social-link"><i class="bi bi-instagram"></i></a>
+            <a href="#" class="social-link"><i class="bi bi-youtube"></i></a>
+          </div>
+        </div>
+        
+        <div class="col-lg-2 col-6">
+          <h6 class="footer-heading">ลิงก์ด่วน</h6>
+          <ul class="footer-links">
+            <li><a href="#about">เกี่ยวกับ</a></li>
+            <li><a href="#features">ฟีเจอร์</a></li>
+            <li><a href="#surveys">แบบสอบถาม</a></li>
+            <li><a href="#contact">ติดต่อ</a></li>
+          </ul>
+        </div>
+        
+        <div class="col-lg-2 col-6">
+          <h6 class="footer-heading">บัญชีผู้ใช้</h6>
+          <ul class="footer-links">
+            <li><a href="/login">เข้าสู่ระบบ</a></li>
+            <li><a href="/register">ลงทะเบียน</a></li>
+            <li><a href="/forgot-password/request-email">ลืมรหัสผ่าน</a></li>
+          </ul>
+        </div>
+        
+        <div class="col-lg-4">
+          <h6 class="footer-heading">เกี่ยวกับโครงการ</h6>
+          <p class="text-muted small mb-3">
+            พัฒนาโดยคณะครุศาสตร์ สาขาวิชาเทคโนโลยีการศึกษา 
+            มหาวิทยาลัยราชภัฏนครสวรรค์ 
+            เพื่อใช้ในการวิจัยและพัฒนาคุณภาพการเรียนการสอน
+          </p>
+          <p class="text-muted small mb-0">
+            <i class="bi bi-calendar3 me-2"></i>พัฒนาเมื่อ: พฤศจิกายน 2567
+          </p>
+        </div>
+      </div>
+      
+      <hr class="my-4 border-secondary">
+      
+      <div class="row align-items-center">
+        <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+          <p class="mb-0 text-muted small">
+            © 2025 มหาวิทยาลัยราชภัฏนครสวรรค์ | สงวนลิขสิทธิ์
+          </p>
+        </div>
+        <div class="col-md-6 text-center text-md-end">
+          <a href="#" class="text-muted small me-3">นโยบายความเป็นส่วนตัว</a>
+          <a href="#" class="text-muted small">เงื่อนไขการใช้งาน</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- AOS Animation -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  
+  <!-- Custom JS -->
+  <script src="/landing.js"></script>
+</body>
+</html>
