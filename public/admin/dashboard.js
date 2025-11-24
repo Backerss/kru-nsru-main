@@ -594,40 +594,36 @@ function initUserManagement() {
     }
   });
 
-  // Edit User Buttons
-  document.querySelectorAll('.btn-edit-user').forEach(btn => {
-    btn.addEventListener('click', function () {
-      const userData = JSON.parse(this.dataset.user);
-      console.log('User Data:', userData); // Debug log
+  // Edit User Buttons (delegated so it works across DataTable pagination)
+  $('#usersTable tbody').on('click', '.btn-edit-user', function () {
+    const userData = JSON.parse(this.dataset.user);
 
-      // Extract prefix from firstName if prefix is empty
-      let prefix = userData.prefix || '';
-      let firstName = userData.firstName || '';
+    // Extract prefix from firstName if prefix is empty
+    let prefix = userData.prefix || '';
+    let firstName = userData.firstName || '';
 
-      if (!prefix && firstName) {
-        // Check if firstName starts with prefix
-        if (firstName.startsWith('นาย')) {
-          prefix = 'นาย';
-          firstName = firstName.substring(3);
-        } else if (firstName.startsWith('นางสาว')) {
-          prefix = 'นางสาว';
-          firstName = firstName.substring(6);
-        } else if (firstName.startsWith('นาง')) {
-          prefix = 'นาง';
-          firstName = firstName.substring(3);
-        }
+    if (!prefix && firstName) {
+      if (firstName.startsWith('นาย')) {
+        prefix = 'นาย';
+        firstName = firstName.substring(3);
+      } else if (firstName.startsWith('นางสาว')) {
+        prefix = 'นางสาว';
+        firstName = firstName.substring(6);
+      } else if (firstName.startsWith('นาง')) {
+        prefix = 'นาง';
+        firstName = firstName.substring(3);
       }
+    }
 
-      // Fill form with user data
-      document.getElementById('edit_uid').value = userData.uid || '';
-      document.getElementById('edit_prefix').value = prefix;
-      document.getElementById('edit_firstName').value = firstName;
-      document.getElementById('edit_lastName').value = userData.lastName || '';
-      document.getElementById('edit_email').value = userData.email || '';
-      document.getElementById('edit_role').value = userData.role || 'student';
+    // Fill form with user data
+    document.getElementById('edit_uid').value = userData.uid || '';
+    document.getElementById('edit_prefix').value = prefix;
+    document.getElementById('edit_firstName').value = firstName;
+    document.getElementById('edit_lastName').value = userData.lastName || '';
+    document.getElementById('edit_email').value = userData.email || '';
+    document.getElementById('edit_role').value = userData.role || 'student';
 
-      editUserModal.show();
-    });
+    editUserModal.show();
   });
 
   // Save Edit User
@@ -688,147 +684,143 @@ function initUserManagement() {
     }
   });
 
-  // Delete User Buttons
-  document.querySelectorAll('.btn-delete-user').forEach(btn => {
-    btn.addEventListener('click', async function () {
-      const uid = this.dataset.uid;
-      const name = this.dataset.name;
+  // Delete User Buttons (delegated)
+  $('#usersTable tbody').on('click', '.btn-delete-user', async function () {
+    const uid = this.dataset.uid;
+    const name = this.dataset.name;
 
-      const result = await Swal.fire({
-        title: 'ยืนยันการลบ',
-        html: `คุณต้องการลบผู้ใช้ <strong>${name}</strong> ใช่หรือไม่?<br><small class="text-danger">การลบจะไม่สามารถกู้คืนได้</small>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'ลบ',
-        cancelButtonText: 'ยกเลิก',
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6'
-      });
-
-      if (result.isConfirmed) {
-        try {
-          const response = await fetch(`/admin/api/users/${uid}`, {
-            method: 'DELETE'
-          });
-
-          const data = await response.json();
-
-          if (response.ok) {
-            Swal.fire({
-              icon: 'success',
-              title: 'ลบสำเร็จ',
-              text: data.message,
-              timer: 2000,
-              showConfirmButton: false
-            }).then(() => {
-              window.location.reload();
-            });
-          } else {
-            throw new Error(data.message);
-          }
-        } catch (error) {
-          Swal.fire({
-            icon: 'error',
-            title: 'เกิดข้อผิดพลาด',
-            text: error.message
-          });
-        }
-      }
+    const result = await Swal.fire({
+      title: 'ยืนยันการลบ',
+      html: `คุณต้องการลบผู้ใช้ <strong>${name}</strong> ใช่หรือไม่?<br><small class="text-danger">การลบจะไม่สามารถกู้คืนได้</small>`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'ลบ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6'
     });
-  });
 
-  // Disconnect Google OAuth Buttons
-  document.querySelectorAll('.btn-disconnect-google').forEach(btn => {
-    btn.addEventListener('click', async function () {
-      const uid = this.dataset.uid;
-      const name = this.dataset.name;
-      const email = this.dataset.email;
-
-      const result = await Swal.fire({
-        title: 'ยกเลิกการเชื่อมต่อ Google OAuth?',
-        html: `
-          <p>คุณต้องการยกเลิกการเชื่อมต่อ Google OAuth สำหรับ:</p>
-          <div class="text-start my-3">
-            <strong>ชื่อ:</strong> ${name}<br>
-            <strong>อีเมล:</strong> ${email}
-          </div>
-          <div class="alert alert-warning text-start">
-            <strong>⚠️ การดำเนินการนี้จะ:</strong>
-            <ul class="mb-0">
-              <li>สร้างรหัสผ่านสุ่ม 8 ตัวอักษร</li>
-              <li>ส่งรหัสผ่านใหม่ไปยัง ${email}</li>
-              <li>ผู้ใช้จะต้องเข้าสู่ระบบด้วยรหัสผ่านแทน Google OAuth</li>
-            </ul>
-          </div>
-        `,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'ยืนยัน ยกเลิกการเชื่อมต่อ',
-        cancelButtonText: 'ยกเลิก',
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6'
-      });
-
-      if (!result.isConfirmed) return;
-
-      // Show loading
-      Swal.fire({
-        title: 'กำลังดำเนินการ...',
-        html: 'กำลังยกเลิกการเชื่อมต่อและส่งรหัสผ่านใหม่',
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
+    if (result.isConfirmed) {
       try {
-        const response = await fetch(`/admin/api/users/${uid}/disconnect-google`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+        const response = await fetch(`/admin/api/users/${uid}`, {
+          method: 'DELETE'
         });
 
         const data = await response.json();
 
-        if (response.ok && data.success) {
-          let html = `<p>${data.message}</p>`;
-          if (data.warning) {
-            html += `<div class="alert alert-warning">${data.warning}</div>`;
-          }
-          if (data.temporaryPassword) {
-            html += `
-              <div class="alert alert-info">
-                <strong>รหัสผ่านชั่วคราว:</strong><br>
-                <code style="font-size: 20px; font-weight: bold;">${data.temporaryPassword}</code><br>
-                <small>กรุณาบันทึกรหัสนี้และแจ้งผู้ใช้</small>
-              </div>
-            `;
-          }
-
-          await Swal.fire({
+        if (response.ok) {
+          Swal.fire({
             icon: 'success',
-            title: 'ยกเลิกการเชื่อมต่อสำเร็จ!',
-            html: html,
-            confirmButtonText: 'ตกลง'
+            title: 'ลบสำเร็จ',
+            text: data.message,
+            timer: 2000,
+            showConfirmButton: false
+          }).then(() => {
+            window.location.reload();
           });
-
-          // Reload page to update user table
-          window.location.reload();
         } else {
-          throw new Error(data.message || 'เกิดข้อผิดพลาด');
+          throw new Error(data.message);
         }
       } catch (error) {
-        console.error('Error:', error);
         Swal.fire({
           icon: 'error',
           title: 'เกิดข้อผิดพลาด',
-          text: error.message || 'ไม่สามารถยกเลิกการเชื่อมต่อได้',
-          confirmButtonText: 'ตกลง'
+          text: error.message
         });
       }
+    }
+  });
+
+  // Disconnect Google OAuth Buttons (delegated)
+  $('#usersTable tbody').on('click', '.btn-disconnect-google', async function () {
+    const uid = this.dataset.uid;
+    const name = this.dataset.name;
+    const email = this.dataset.email;
+
+    const result = await Swal.fire({
+      title: 'ยกเลิกการเชื่อมต่อ Google OAuth?',
+      html: `
+        <p>คุณต้องการยกเลิกการเชื่อมต่อ Google OAuth สำหรับ:</p>
+        <div class="text-start my-3">
+          <strong>ชื่อ:</strong> ${name}<br>
+          <strong>อีเมล:</strong> ${email}
+        </div>
+        <div class="alert alert-warning text-start">
+          <strong>⚠️ การดำเนินการนี้จะ:</strong>
+          <ul class="mb-0">
+            <li>สร้างรหัสผ่านสุ่ม 8 ตัวอักษร</li>
+            <li>ส่งรหัสผ่านใหม่ไปยัง ${email}</li>
+            <li>ผู้ใช้จะต้องเข้าสู่ระบบด้วยรหัสผ่านแทน Google OAuth</li>
+          </ul>
+        </div>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'ยืนยัน ยกเลิกการเชื่อมต่อ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6'
     });
+
+    if (!result.isConfirmed) return;
+
+    // Show loading
+    Swal.fire({
+      title: 'กำลังดำเนินการ...',
+      html: 'กำลังยกเลิกการเชื่อมต่อและส่งรหัสผ่านใหม่',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      const response = await fetch(`/admin/api/users/${uid}/disconnect-google`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        let html = `<p>${data.message}</p>`;
+        if (data.warning) {
+          html += `<div class="alert alert-warning">${data.warning}</div>`;
+        }
+        if (data.temporaryPassword) {
+          html += `
+            <div class="alert alert-info">
+              <strong>รหัสผ่านชั่วคราว:</strong><br>
+              <code style="font-size: 20px; font-weight: bold;">${data.temporaryPassword}</code><br>
+              <small>กรุณาบันทึกรหัสนี้และแจ้งผู้ใช้</small>
+            </div>
+          `;
+        }
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'ยกเลิกการเชื่อมต่อสำเร็จ!',
+          html: html,
+          confirmButtonText: 'ตกลง'
+        });
+
+        // Reload page to update user table
+        window.location.reload();
+      } else {
+        throw new Error(data.message || 'เกิดข้อผิดพลาด');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: error.message || 'ไม่สามารถยกเลิกการเชื่อมต่อได้',
+        confirmButtonText: 'ตกลง'
+      });
+    }
   });
 }
 
