@@ -60,14 +60,6 @@
                         </div>
 
                         <form action="/register" method="POST" class="register-form" id="registerForm">
-                            <!-- รหัสนศ -->
-                            <div class="mb-3">
-                                <label for="studentId" class="form-label">รหัสนักศึกษา <span
-                                        class="text-danger">*</span></label>
-                                <input type="text" id="studentId" name="studentId" class="form-control"
-                                    placeholder="กรอกรหัสนักศึกษา" required>
-                            </div>
-
                             <!-- คำนำหน้า ชื่อ สกุล -->
                             <div class="row g-3 mb-3">
                                 <div class="col-12 col-sm-3">
@@ -94,36 +86,12 @@
                                 </div>
                             </div>
 
-                            <!-- วันเดือนปีเกิด และ อายุ -->
-                            <div class="row g-3 mb-3">
-                                <div class="col-12 col-sm-8">
-                                    <label for="birthdate" class="form-label">วันเดือนปีเกิด <span
-                                            class="text-danger">*</span></label>
-                                    <input type="date" id="birthdate" name="birthdate" class="form-control" required>
-                                    <div id="birthdateThai" class="form-text text-muted mt-1">(ปี พ.ศ. จะแสดงที่นี่)
-                                    </div>
-                                </div>
-                                <div class="col-12 col-sm-4">
-                                    <label for="age" class="form-label">อายุ</label>
-                                    <input type="number" id="age" name="age" class="form-control" placeholder="อายุ"
-                                        readonly>
-                                </div>
-                            </div>
-
-                            <!-- อีเมล และ เบอร์ -->
-                            <div class="row g-3 mb-3">
-                                <div class="col-12 col-sm-6">
-                                    <label for="email" class="form-label">อีเมล <span
-                                            class="text-danger">*</span></label>
-                                    <input type="email" id="email" name="email" class="form-control"
-                                        placeholder="example@email.com" required>
-                                </div>
-                                <div class="col-12 col-sm-6">
-                                    <label for="phone" class="form-label">เบอร์โทรศัพท์ <span
-                                            class="text-danger">*</span></label>
-                                    <input type="tel" id="phone" name="phone" class="form-control"
-                                        placeholder="0xx-xxx-xxxx" required>
-                                </div>
+                            <!-- อีเมล -->
+                            <div class="mb-3">
+                                <label for="email" class="form-label">อีเมล <span
+                                        class="text-danger">*</span></label>
+                                <input type="email" id="email" name="email" class="form-control"
+                                    placeholder="example@email.com" required>
                             </div>
 
                             <!-- รหัสผ่าน -->
@@ -180,31 +148,21 @@
                         <h6 class="fw-bold text-primary mb-3">ข้อมูลจะถูกใช้เพื่อการศึกษาเท่านั้น</h6>
 
                         <div class="mb-4">
-                            <h6 class="fw-semibold mb-2">การใช้ข้อมูลแต่ละประเภท:</h6>
+                            <h6 class="fw-semibold mb-2">การใช้ข้อมูลที่เก็บรวบรวม:</h6>
 
                             <div class="mb-3">
-                                <strong>รหัสนักศึกษา:</strong> ใช้สำหรับการระบุตัวตนในระบบการเรียนการสอน
-                                และการติดตามผลการเรียน
+                                <strong>ชื่อ-นามสกุล และคำนำหน้า:</strong> ใช้สำหรับการสร้างบัญชีผู้ใช้
+                                การแสดงผลในระบบ และการออกใบรับรองผลการประเมิน
                             </div>
 
                             <div class="mb-3">
-                                <strong>ชื่อ-สกุล และคำนำหน้า:</strong> ใช้สำหรับการสร้างบัญชีผู้ใช้
-                                การออกใบประกาศนียบัตร และการติดต่อสื่อสาร
+                                <strong>อีเมล:</strong> ใช้สำหรับการเข้าสู่ระบบ การส่งผลการประเมิน
+                                การแจ้งเตือน และการสื่อสารเกี่ยวกับระบบ
                             </div>
 
                             <div class="mb-3">
-                                <strong>วันเกิดและอายุ:</strong> ใช้เพื่อวิเคราะห์กลุ่มอายุของผู้เรียน
-                                และปรับแต่งเนื้อหาให้เหมาะสม
-                            </div>
-
-                            <div class="mb-3">
-                                <strong>อีเมล:</strong> ใช้สำหรับการส่งข้อมูลการเรียน การแจ้งเตือน
-                                และการสื่อสารเกี่ยวกับการศึกษา
-                            </div>
-
-                            <div class="mb-3">
-                                <strong>เบอร์โทรศัพท์:</strong> ใช้สำหรับการติดต่อฉุกเฉิน การแจ้งข่าวสาร
-                                และการยืนยันตัวตน
+                                <strong>รหัสผ่าน:</strong> ถูกเข้ารหัสด้วยมาตรฐาน bcrypt
+                                เพื่อความปลอดภัยในการเข้าสู่ระบบ
                             </div>
                         </div>
 

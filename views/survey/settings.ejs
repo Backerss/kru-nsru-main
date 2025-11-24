@@ -51,15 +51,8 @@
               <div class="settings-card-body">
                 <form id="personalInfoForm">
                   <div class="row g-3">
-                    <!-- Student ID (Read-only) -->
-                    <div class="col-12 col-md-6">
-                      <label class="form-label">รหัสนักศึกษา</label>
-                      <input type="text" class="form-control" value="<%= user?.studentId || '6510000000' %>" readonly>
-                      <small class="text-muted">ไม่สามารถแก้ไขได้</small>
-                    </div>
-
                     <!-- Email (Read-only with disconnect option for Google OAuth) -->
-                    <div class="col-12 col-md-6">
+                    <div class="col-12">
                       <label class="form-label">อีเมล</label>
                       <div class="position-relative">
                         <input type="email" class="form-control" value="<%= user?.email || 'student@example.com' %>"
@@ -82,58 +75,75 @@
                       </small>
                     </div>
 
+                    <!-- Prefix -->
+                    <div class="col-12 col-md-3">
+                      <label class="form-label">คำนำหน้า</label>
+                      <select class="form-select" id="prefix" name="prefix" disabled>
+                        <option value="">ไม่ระบุ</option>
+                        <option value="นาย" <%= user?.prefix === 'นาย' ? 'selected' : '' %>>นาย</option>
+                        <option value="นางสาว" <%= user?.prefix === 'นางสาว' ? 'selected' : '' %>>นางสาว</option>
+                        <option value="นาง" <%= user?.prefix === 'นาง' ? 'selected' : '' %>>นาง</option>
+                      </select>
+                    </div>
+
                     <!-- First Name (Editable) -->
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-4">
                       <label class="form-label required">ชื่อจริง</label>
                       <input type="text" class="form-control" id="firstName" name="firstName" value="<%= user?.firstName || '' %>" disabled
                         required>
                     </div>
 
                     <!-- Last Name (Editable) -->
-                    <div class="col-12 col-md-6">
+                    <div class="col-12 col-md-5">
                       <label class="form-label required">นามสกุล</label>
                       <input type="text" class="form-control" id="lastName" name="lastName" value="<%= user?.lastName || '' %>" disabled
                         required>
                     </div>
 
-                    <!-- Faculty -->
+                    <!-- Faculty (Locked to คณะครุศาสตร์) -->
                     <div class="col-12 col-md-6">
                       <label class="form-label">คณะ</label>
-                      <input type="text" class="form-control" id="faculty" name="faculty" 
-                        value="<%= user?.faculty || 'ยังไม่ระบุ' %>" 
-                        <%= (user?.faculty && user.faculty !== 'ยังไม่ระบุ') ? 'readonly' : 'disabled' %>>
-                      <small class="text-muted">
-                        <%= (user?.faculty && user.faculty !== 'ยังไม่ระบุ') ? 'ติดต่อเจ้าหน้าที่เพื่อแก้ไข' : 'สามารถแก้ไขได้ 1 ครั้งเท่านั้น' %>
-                      </small>
+                      <div class="d-flex align-items-center">
+                        <span class="text-muted me-2">🔒</span>
+                        <input type="text" class="form-control" value="คณะครุศาสตร์" readonly>
+                      </div>
+                      <small class="text-muted">ข้อมูลถูกกำหนดโดยระบบ</small>
                     </div>
 
-                    <!-- Major -->
+                    <!-- Year (Locked to 4) -->
                     <div class="col-12 col-md-6">
-                      <label class="form-label">สาขาวิชา</label>
-                      <input type="text" class="form-control" id="major" name="major" 
-                        value="<%= user?.major || 'ยังไม่ระบุ' %>"
-                        <%= (user?.major && user.major !== 'ยังไม่ระบุ') ? 'readonly' : 'disabled' %>>
-                      <small class="text-muted">
-                        <%= (user?.major && user.major !== 'ยังไม่ระบุ') ? 'ติดต่อเจ้าหน้าที่เพื่อแก้ไข' : 'สามารถแก้ไขได้ 1 ครั้งเท่านั้น' %>
-                      </small>
+                      <label class="form-label">ชั้นปี</label>
+                      <div class="d-flex align-items-center">
+                        <span class="text-muted me-2">🔒</span>
+                        <input type="text" class="form-control" value="4" readonly>
+                      </div>
+                      <small class="text-muted">ข้อมูลถูกกำหนดโดยระบบ</small>
                     </div>
 
-                    <!-- Year -->
-                    <div class="col-12 col-md-6">
-                      <label class="form-label">ชั้นปีที่</label>
-                      <select class="form-select" id="year" name="year" 
-                        <%= (user?.year && user.year !== 'ยังไม่ระบุ') ? 'disabled' : 'disabled' %>>
-                        <option value="ยังไม่ระบุ" <%= (!user?.year || user.year === 'ยังไม่ระบุ') ? 'selected' : '' %>>ยังไม่ระบุ</option>
-                        <option value="1" <%= user?.year === '1' ? 'selected' : '' %>>1</option>
-                        <option value="2" <%= user?.year === '2' ? 'selected' : '' %>>2</option>
-                        <option value="3" <%= user?.year === '3' ? 'selected' : '' %>>3</option>
-                        <option value="4" <%= user?.year === '4' ? 'selected' : '' %>>4</option>
-                        <option value="5" <%= user?.year === '5' ? 'selected' : '' %>>5</option>
-                        <option value="6" <%= user?.year === '6' ? 'selected' : '' %>>6</option>
-                      </select>
-                      <small class="text-muted">
-                        <%= (user?.year && user.year !== 'ยังไม่ระบุ') ? 'ติดต่อเจ้าหน้าที่เพื่อแก้ไข' : 'สามารถแก้ไขได้ 1 ครั้งเท่านั้น' %>
-                      </small>
+                    <!-- Major (One-time selection) -->
+                    <div class="col-12">
+                      <label class="form-label">สาขาวิชา <% if (!user?.major || user.major === 'ยังไม่ระบุ') { %><span class="badge bg-warning text-dark ms-2 pulse-badge">เลือกได้ครั้งเดียว</span><% } %></label>
+                      <% if (user?.major && user.major !== 'ยังไม่ระบุ') { %>
+                        <div class="d-flex align-items-center">
+                          <span class="text-success me-2">✓</span>
+                          <input type="text" class="form-control" value="<%= user.major %>" readonly>
+                        </div>
+                        <small class="text-muted">คุณได้เลือกสาขาวิชาแล้ว ไม่สามารถเปลี่ยนแปลงได้</small>
+                      <% } else { %>
+                        <select class="form-select" id="major" name="major" disabled>
+                          <option value="">-- กรุณาเลือกสาขาวิชา --</option>
+                          <option value="การศึกษาปฐมวัย">การศึกษาปฐมวัย</option>
+                          <option value="วิทยาศาสตร์ทั่วไป">วิทยาศาสตร์ทั่วไป</option>
+                          <option value="คณิตศาสตร์">คณิตศาสตร์</option>
+                          <option value="ภาษาอังกฤษ">ภาษาอังกฤษ</option>
+                          <option value="ภาษาไทย">ภาษาไทย</option>
+                          <option value="สังคมศึกษา">สังคมศึกษา</option>
+                          <option value="พลศึกษา">พลศึกษา</option>
+                          <option value="เทคโนโลยีดิจิทัลเพื่อการศึกษา">เทคโนโลยีดิจิทัลเพื่อการศึกษา</option>
+                          <option value="การประถมศึกษา">การประถมศึกษา</option>
+                        </select>
+                        <small class="text-muted">⚠️ สาขาวิชาที่เลือกไม่สามารถเปลี่ยนแปลงได้ กรุณาเลือกอย่างรอบคอบ</small>
+                      <% } %>
                     </div>
                   </div>
 

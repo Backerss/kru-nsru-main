@@ -2,13 +2,13 @@
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const studentId = document.getElementById('studentId').value.trim();
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const rememberMe = document.getElementById('rememberMe').checked;
     
     // Basic validation
-    if (!studentId || !password) {
-        showError('กรุณากรอกรหัสนักศึกษาและรหัสผ่าน');
+    if (!email || !password) {
+        showError('กรุณากรอกอีเมลและรหัสผ่าน');
         return;
     }
     
@@ -33,7 +33,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                studentId,
+                email,
                 password,
                 rememberMe
             })
@@ -60,7 +60,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             Swal.fire({
                 icon: 'error',
                 title: 'เข้าสู่ระบบไม่สำเร็จ',
-                text: result.error || 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง',
+                text: result.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
                 confirmButtonText: 'ตกลง'
             });
         }
@@ -90,7 +90,7 @@ function hideError() {
 }
 
 // Clear error on input
-document.getElementById('studentId').addEventListener('input', hideError);
+document.getElementById('email').addEventListener('input', hideError);
 document.getElementById('password').addEventListener('input', hideError);
 
 // Google OAuth login

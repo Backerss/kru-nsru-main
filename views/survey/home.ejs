@@ -24,10 +24,22 @@
         <div class="row mb-4">
           <div class="col-12">
             <div class="welcome-card">
-              <h1 class="welcome-title">สวัสดี, <span class="text-primary">
-                  <%= user?.name || 'นักศึกษา' %>
-                </span></h1>
-              <p class="welcome-subtitle text-muted mb-0">ยินดีต้อนรับสู่ระบบแบบสอบถามออนไลน์</p>
+              <h1 class="welcome-title">
+                <% if (user?.role === 'student') { %>
+                  สวัสดี นักศึกษา
+                <% } else if (user?.role === 'teacher') { %>
+                  สวัสดี อาจารย์
+                <% } else if (user?.role === 'admin') { %>
+                  สวัสดี ผู้ดูแลระบบ
+                <% } else { %>
+                  สวัสดี
+                <% } %>
+                , <span class="text-primary"><%= user?.name || (user?.prefix || '') + (user?.firstName || '') %></span>
+              </h1>
+              <p class="welcome-subtitle text-muted mb-0">
+                <% const todayCount = stats?.responsesToday ?? 0; const totalCount = stats?.responsesTotal ?? 0; %>
+                วันนี้มีผู้ตอบแบบสอบถามแล้ว <strong><%= todayCount %></strong> คน — รวมทั้งหมด <strong><%= totalCount %></strong> ครั้ง
+              </p>
             </div>
           </div>
         </div>
@@ -56,43 +68,11 @@
                   <!-- Student Details -->
                   <div class="col-12 col-md-8 col-lg-9">
                     <div class="row g-3">
-                      <div class="col-12 col-sm-6">
-                        <div class="info-item">
-                          <label class="info-label">รหัสนักศึกษา</label>
-                          <p class="info-value">
-                            <%= user?.studentId || '6510000000' %>
-                          </p>
-                        </div>
-                      </div>
-                      <div class="col-12 col-sm-6">
+                      <div class="col-12">
                         <div class="info-item">
                           <label class="info-label">ชื่อ-นามสกุล</label>
                           <p class="info-value">
-                            <%= user?.name || 'นาย ทดสอบ ระบบ' %>
-                          </p>
-                        </div>
-                      </div>
-                      <div class="col-12 col-sm-6">
-                        <div class="info-item">
-                          <label class="info-label">คณะ</label>
-                          <p class="info-value">
-                            <%= user?.faculty || 'คณะวิทยาศาสตร์' %>
-                          </p>
-                        </div>
-                      </div>
-                      <div class="col-12 col-sm-6">
-                        <div class="info-item">
-                          <label class="info-label">สาขาวิชา</label>
-                          <p class="info-value">
-                            <%= user?.major || 'วิทยาการคอมพิวเตอร์' %>
-                          </p>
-                        </div>
-                      </div>
-                      <div class="col-12 col-sm-6">
-                        <div class="info-item">
-                          <label class="info-label">ชั้นปีที่</label>
-                          <p class="info-value">
-                            <%= user?.year || '4' %>
+                            <%= user?.name || (user?.prefix || '') + (user?.firstName || '') + ' ' + (user?.lastName || '') %>
                           </p>
                         </div>
                       </div>
@@ -101,6 +81,50 @@
                           <label class="info-label">อีเมล</label>
                           <p class="info-value">
                             <%= user?.email || 'student@example.com' %>
+                          </p>
+                        </div>
+                      </div>
+                      <div class="col-12 col-sm-6">
+                        <div class="info-item">
+                          <label class="info-label">คณะ</label>
+                          <p class="info-value text-muted">
+                            <i class="bi bi-lock-fill me-1"></i>คณะครุศาสตร์
+                          </p>
+                        </div>
+                      </div>
+                      <div class="col-12 col-sm-6">
+                        <div class="info-item">
+                          <label class="info-label">สาขาวิชา <% if (!user?.major || user?.major === 'ยังไม่ระบุ') { %><span class="badge bg-warning text-dark">กรุณาเลือก</span><% } %></label>
+                          <% if (user?.major && user?.major !== 'ยังไม่ระบุ') { %>
+                            <p class="info-value">
+                              <i class="bi bi-check-circle-fill text-success me-1"></i><%= user.major %>
+                            </p>
+                          <% } else { %>
+                            <div class="d-flex gap-2 align-items-center">
+                              <select class="form-select form-select-sm" id="majorSelect" style="max-width: 300px;">
+                                <option value="">-- เลือกสาขาวิชา --</option>
+                                <option value="การศึกษาปฐมวัย">การศึกษาปฐมวัย</option>
+                                <option value="วิทยาศาสตร์ทั่วไป">วิทยาศาสตร์ทั่วไป</option>
+                                <option value="คณิตศาสตร์">คณิตศาสตร์</option>
+                                <option value="ภาษาอังกฤษ">ภาษาอังกฤษ</option>
+                                <option value="ภาษาไทย">ภาษาไทย</option>
+                                <option value="สังคมศึกษา">สังคมศึกษา</option>
+                                <option value="พลศึกษา">พลศึกษา</option>
+                                <option value="เทคโนโลยีดิจิทัลเพื่อการศึกษา">เทคโนโลยีดิจิทัลเพื่อการศึกษา</option>
+                                <option value="การประถมศึกษา">การประถมศึกษา</option>
+                              </select>
+                              <button type="button" class="btn btn-primary btn-sm" id="saveMajorBtn" disabled>
+                                <i class="bi bi-save me-1"></i>บันทึก
+                              </button>
+                            </div>
+                          <% } %>
+                        </div>
+                      </div>
+                      <div class="col-12 col-sm-6">
+                        <div class="info-item">
+                          <label class="info-label">ชั้นปีที่</label>
+                          <p class="info-value text-muted">
+                            <i class="bi bi-lock-fill me-1"></i>4
                           </p>
                         </div>
                       </div>

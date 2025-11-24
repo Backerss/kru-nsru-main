@@ -195,8 +195,7 @@ router.post('/api/users/:studentId/role', async (req, res) => {
 router.put('/api/users/:uid', async (req, res) => {
   try {
     const { uid } = req.params;
-    const { studentId: newStudentIdRaw, prefix, firstName, lastName, email, phone, age, birthdate, faculty, major, year, role } = req.body;
-    const newStudentId = newStudentIdRaw ? String(newStudentIdRaw).trim() : '';
+    const { prefix, firstName, lastName, email, role } = req.body;
     
     // Validate required fields
     if (!firstName || !lastName || !email) {
@@ -210,63 +209,31 @@ router.put('/api/users/:uid', async (req, res) => {
 
     const db = req.app.get('db');
 
-    // Build the base update data (without changing doc id)
+    // Build the update data
     const updateData = {
       prefix: prefix || '',
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
-      phone: phone || '',
-      age: age || '',
-      birthdate: birthdate || '',
-      faculty: faculty || 'ยังไม่ระบุ',
-      major: major || 'ยังไม่ระบุ',
-      year: year || 'ยังไม่ระบุ',
       role: role || 'student',
       updatedAt: new Date().toISOString()
     };
 
-    // Fetch current user to detect studentId change
+    // Fetch current user
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
     if (!userDoc.exists) {
       return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้' });
     }
 
-    const before = userDoc.data();
+    // Apply update
+    await userRef.update(updateData);
 
-    // Optional uniqueness check for studentId
-    if (newStudentId && newStudentId !== before.studentId) {
-      const dupSnap = await db.collection('users').where('studentId', '==', newStudentId).get();
-      const hasOther = dupSnap.docs.some(d => d.id !== uid);
-      if (hasOther) {
-        return res.status(400).json({ success: false, message: 'รหัสนักศึกษานี้มีอยู่ในระบบแล้ว' });
-      }
-    }
+    // Get updated document
+    const updatedDoc = await userRef.get();
+    const updatedData = updatedDoc.data();
 
-    // Apply update (including new studentId if provided)
-    const finalData = { ...updateData };
-    if (newStudentId) finalData.studentId = newStudentId;
-    await userRef.update(finalData);
-
-    // If studentId changed, cascade to survey_responses.userId
-    if (newStudentId && newStudentId !== before.studentId) {
-      const responsesSnapshot = await db.collection('survey_responses').where('userId', '==', before.studentId).get();
-      if (!responsesSnapshot.empty) {
-        const docs = [];
-        responsesSnapshot.forEach(d => docs.push(d));
-        const chunkSize = 450;
-        for (let i = 0; i < docs.length; i += chunkSize) {
-          const batch = db.batch();
-          docs.slice(i, i + chunkSize).forEach(d => {
-            batch.update(db.collection('survey_responses').doc(d.id), { userId: newStudentId });
-          });
-          await batch.commit();
-        }
-      }
-    }
-
-    res.json({ success: true, message: 'อัพเดทข้อมูลสำเร็จ', data: { ...before, ...finalData, uid } });
+    res.json({ success: true, message: 'อัพเดทข้อมูลสำเร็จ', data: { ...updatedData, uid } });
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาด' });
@@ -276,10 +243,10 @@ router.put('/api/users/:uid', async (req, res) => {
 // Create new user
 router.post('/api/users', async (req, res) => {
   try {
-    const { studentId, prefix, firstName, lastName, email, password, phone, age, birthdate, faculty, major, year, role } = req.body;
+    const { prefix, firstName, lastName, email, password, role } = req.body;
     
     // Validate required fields
-    if (!studentId || !firstName || !lastName || !email || !password) {
+    if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ success: false, message: 'กรุณากรอกข้อมูลที่จำเป็น' });
     }
 
@@ -290,10 +257,10 @@ router.post('/api/users', async (req, res) => {
 
     const db = req.app.get('db');
     
-    // Check if studentId already exists
-    const existingUser = await db.collection('users').doc(studentId).get();
-    if (existingUser.exists) {
-      return res.status(400).json({ success: false, message: 'รหัสนักศึกษานี้มีอยู่ในระบบแล้ว' });
+    // Check if email already exists
+    const existingUserSnapshot = await db.collection('users').where('email', '==', email.trim()).get();
+    if (!existingUserSnapshot.empty) {
+      return res.status(400).json({ success: false, message: 'อีเมลนี้มีอยู่ในระบบแล้ว' });
     }
 
     // Hash password
@@ -301,26 +268,23 @@ router.post('/api/users', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const userData = {
-      studentId: studentId.trim(),
       prefix: prefix || '',
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       email: email.trim(),
       password: hashedPassword,
-      phone: phone || '',
-      age: age || '',
-      birthdate: birthdate || '',
-      faculty: faculty || 'ยังไม่ระบุ',
-      major: major || 'ยังไม่ระบุ',
-      year: year || 'ยังไม่ระบุ',
       role: role || 'student',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
-    await db.collection('users').doc(studentId).set(userData);
+    // Create document with auto-generated ID
+    const docRef = await db.collection('users').add(userData);
+    
+    // Add uid field
+    await docRef.update({ uid: docRef.id });
 
-    res.json({ success: true, message: 'เพิ่มผู้ใช้สำเร็จ', data: userData });
+    res.json({ success: true, message: 'เพิ่มผู้ใช้สำเร็จ', data: { ...userData, uid: docRef.id } });
   } catch (error) {
     console.error('Error creating user:', error);
     res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาด' });
@@ -328,12 +292,12 @@ router.post('/api/users', async (req, res) => {
 });
 
 // Delete user
-router.delete('/api/users/:studentId', async (req, res) => {
+router.delete('/api/users/:uid', async (req, res) => {
   try {
-    const { studentId } = req.params;
+    const { uid } = req.params;
     const db = req.app.get('db');
     
-    await db.collection('users').doc(studentId).delete();
+    await db.collection('users').doc(uid).delete();
     
     res.json({ success: true, message: 'ลบผู้ใช้สำเร็จ' });
   } catch (error) {
@@ -881,14 +845,14 @@ router.post('/api/export-to-sheets', async (req, res) => {
 });
 
 // Disconnect Google OAuth and send random password
-router.post('/api/users/:studentId/disconnect-google', async (req, res) => {
+router.post('/api/users/:uid/disconnect-google', async (req, res) => {
   try {
-    const { studentId } = req.params;
+    const { uid } = req.params;
     const db = req.app.get('db');
     const bcrypt = require('bcrypt');
     
     // Get user data
-    const userRef = db.collection('users').doc(studentId);
+    const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
     
     if (!userDoc.exists) {

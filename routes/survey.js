@@ -17,37 +17,34 @@ router.use(requireLogin);
 // Survey home page
 router.get('/home', async (req, res) => {
   try {
-    const userId = req.session.userId;
+    const userId = req.session.userId; // ดึง userId จาก session
+    const userEmail = req.session.userEmail || req.session.userData?.email;
     const sessionData = req.session.userData;
     const db = req.app.get('db');
 
-    // Get additional user data from Firestore if needed
-    const userRef = db.collection('users').doc(userId);
-    const doc = await userRef.get();
+    // Get additional user data from Firestore using email
+    const usersRef = db.collection('users');
+    const querySnapshot = await usersRef.where('email', '==', userEmail).limit(1).get();
 
     let userData = sessionData;
     let userRole = 'student';
     
-    if (doc.exists) {
-      const dbData = doc.data();
+    if (!querySnapshot.empty) {
+      const dbData = querySnapshot.docs[0].data();
       userRole = dbData.role || 'student';
       userData = {
-        studentId: dbData.studentId,
-        name: `${dbData.prefix}${dbData.firstName} ${dbData.lastName}`,
+        email: dbData.email,
+        name: `${dbData.prefix || ''}${dbData.firstName} ${dbData.lastName}`,
         prefix: dbData.prefix,
         firstName: dbData.firstName,
         lastName: dbData.lastName,
-        email: dbData.email,
-        phone: dbData.phone,
-        age: dbData.age,
-        birthdate: dbData.birthdate,
         faculty: dbData.faculty || 'ยังไม่ระบุ',
         major: dbData.major || 'ยังไม่ระบุ',
         year: dbData.year || 'ยังไม่ระบุ'
       };
     }
 
-    // Get survey completion stats
+    // Get survey completion stats (ใช้ userId จาก session)
     const responsesSnapshot = await db.collection('survey_responses')
       .where('userId', '==', userId)
       .get();
@@ -62,16 +59,49 @@ router.get('/home', async (req, res) => {
       totalSurveys = files.filter(f => f.endsWith('.json')).length;
     }
 
-    res.render('survey/home', {
-      title: 'หน้าหลัก',
-      user: { ...userData, role: userRole },
-      currentPage: 'home',
-      stats: {
-        completed: completedCount,
-        total: totalSurveys,
-        remaining: totalSurveys - completedCount
-      }
-    });
+    // Compute today's survey response counts (across all users)
+    try {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
+
+      const todaySnap = await db.collection('survey_responses')
+        .where('submittedAt', '>=', startOfDay)
+        .where('submittedAt', '<', startOfTomorrow)
+        .get();
+
+      const totalResponsesSnap = await db.collection('survey_responses').get();
+
+      const responsesToday = todaySnap.size;
+      const responsesTotal = totalResponsesSnap.size;
+
+      res.render('survey/home', {
+        title: 'หน้าหลัก',
+        user: { ...userData, role: userRole },
+        currentPage: 'home',
+        stats: {
+          completed: completedCount,
+          total: totalSurveys,
+          remaining: totalSurveys - completedCount,
+          responsesToday,
+          responsesTotal
+        }
+      });
+    } catch (errStats) {
+      console.error('Error computing response stats:', errStats);
+      res.render('survey/home', {
+        title: 'หน้าหลัก',
+        user: { ...userData, role: userRole },
+        currentPage: 'home',
+        stats: {
+          completed: completedCount,
+          total: totalSurveys,
+          remaining: totalSurveys - completedCount,
+          responsesToday: 0,
+          responsesTotal: 0
+        }
+      });
+    }
   } catch (error) {
     console.error('Error loading home page:', error);
     res.status(500).send('เกิดข้อผิดพลาดในการโหลดข้อมูล');
@@ -594,6 +624,105 @@ router.post('/disconnect-google', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'เกิดข้อผิดพลาดในการยกเลิกการเชื่อมต่อ'
+    });
+  }
+});
+
+// Update major (one-time only)
+router.post('/update-major', async (req, res) => {
+  try {
+    const userEmail = req.session.userEmail || req.session.userData?.email;
+    const { major, faculty, year } = req.body;
+
+    if (!userEmail) {
+      return res.status(401).json({
+        success: false,
+        message: 'กรุณาเข้าสู่ระบบ'
+      });
+    }
+
+    if (!major) {
+      return res.status(400).json({
+        success: false,
+        message: 'กรุณาระบุสาขาวิชา'
+      });
+    }
+
+    const db = req.app.get('db');
+    
+    // Query users collection to find document with this email
+    const usersRef = db.collection('users');
+    const querySnapshot = await usersRef.where('email', '==', userEmail).limit(1).get();
+    
+    if (querySnapshot.empty) {
+      return res.status(404).json({
+        success: false,
+        message: 'ไม่พบข้อมูลผู้ใช้ที่มีอีเมล: ' + userEmail
+      });
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    const userData = userDoc.data();
+
+    // Check if major is already set
+    if (userData.major && userData.major !== 'ยังไม่ระบุ') {
+      return res.status(400).json({
+        success: false,
+        message: 'คุณได้เลือกสาขาวิชาไปแล้ว ไม่สามารถแก้ไขได้อีก'
+      });
+    }
+
+    // Valid majors list
+    const validMajors = [
+      'การศึกษาปฐมวัย',
+      'วิทยาศาสตร์ทั่วไป',
+      'คณิตศาสตร์',
+      'ภาษาอังกฤษ',
+      'ภาษาไทย',
+      'สังคมศึกษา',
+      'พลศึกษา',
+      'เทคโนโลยีดิจิทัลเพื่อการศึกษา',
+      'การประถมศึกษา'
+    ];
+
+    if (!validMajors.includes(major)) {
+      return res.status(400).json({
+        success: false,
+        message: 'สาขาวิชาไม่ถูกต้อง'
+      });
+    }
+
+    // Update user data
+    await userDoc.ref.update({
+      major: major,
+      faculty: faculty || 'คณะครุศาสตร์',
+      year: year || '4',
+      updatedAt: new Date().toISOString()
+    });
+
+    // Update session
+    req.session.userData = {
+      ...req.session.userData,
+      major: major,
+      faculty: faculty || 'คณะครุศาสตร์',
+      year: year || '4'
+    };
+
+    console.log('Major updated successfully:', {
+      userEmail,
+      major,
+      timestamp: new Date().toISOString()
+    });
+
+    res.json({
+      success: true,
+      message: 'บันทึกสาขาวิชาสำเร็จ'
+    });
+  } catch (error) {
+    console.error('Error updating major:', error);
+    res.status(500).json({
+      success: false,
+      message: 'เกิดข้อผิดพลาดในการบันทึกข้อมูล'
     });
   }
 });

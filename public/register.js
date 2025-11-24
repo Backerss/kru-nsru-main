@@ -1,17 +1,3 @@
-// Calculate age from birthdate
-document.getElementById('birthdate').addEventListener('change', function () {
-    const birthDate = new Date(this.value);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
-
-    document.getElementById('age').value = age >= 0 ? age : '';
-});
-
 // Password confirmation validation
 document.getElementById('confirmPassword').addEventListener('input', function () {
     const password = document.getElementById('password').value;
@@ -65,40 +51,6 @@ window.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Show Thai Buddhist year (พ.ศ.) for birthdate and calculate age
-function formatDateToThai(birthDate) {
-    if (!birthDate || isNaN(birthDate.getTime())) return '';
-    const d = String(birthDate.getDate()).padStart(2, '0');
-    const m = String(birthDate.getMonth() + 1).padStart(2, '0');
-    const by = birthDate.getFullYear() + 543; // พ.ศ.
-    return `${d}/${m}/${by}`;
-}
-
-const birthInput = document.getElementById('birthdate');
-const birthThaiEl = document.getElementById('birthdateThai');
-
-function updateAgeAndThai() {
-    const val = birthInput.value;
-    if (!val) {
-        birthThaiEl.textContent = '(ปี พ.ศ. จะแสดงที่นี่)';
-        document.getElementById('age').value = '';
-        return;
-    }
-    const birthDate = new Date(val);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    document.getElementById('age').value = age >= 0 ? age : '';
-    birthThaiEl.textContent = 'วันเกิด (พ.ศ.): ' + formatDateToThai(birthDate);
-}
-
-birthInput.addEventListener('change', updateAgeAndThai);
-// initialize if value present
-if (birthInput.value) updateAgeAndThai();
-
 // Form submission with validation
 document.getElementById('registerForm').addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -109,28 +61,6 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     if (password !== confirmPassword) {
         document.getElementById('confirmPassword').classList.add('is-invalid');
         document.getElementById('passwordError').textContent = 'รหัสผ่านไม่ตรงกัน';
-        return;
-    }
-
-    const ageVal = parseInt(document.getElementById('age').value, 10);
-    if (isNaN(ageVal)) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'กรุณากรอกวันเกิด',
-            text: 'โปรดระบุวัน/เดือน/ปีเกิดของคุณเพื่อคำนวณอายุ',
-            confirmButtonText: 'ตกลง'
-        });
-        return;
-    }
-
-    if (ageVal < 18) {
-        Swal.fire({
-            icon: 'error',
-            title: 'ไม่สามารถสมัครได้',
-            html: `<p>ขออภัย คุณต้องมีอายุตั้งแต่ 18 ปีขึ้นไปเพื่อสมัครสมาชิก</p>
-                   <p>อายุตอนนี้: <strong>${ageVal}</strong> ปี</p>`,
-            confirmButtonText: 'ตกลง'
-        });
         return;
     }
 

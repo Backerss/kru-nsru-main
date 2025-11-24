@@ -39,37 +39,28 @@ function handlePersonalInfoEdit() {
   const cancelBtn = document.getElementById('cancelPersonalBtn');
   const form = document.getElementById('personalInfoForm');
   const actions = document.getElementById('personalActions');
+  const prefix = document.getElementById('prefix');
   const firstName = document.getElementById('firstName');
   const lastName = document.getElementById('lastName');
-  const faculty = document.getElementById('faculty');
   const major = document.getElementById('major');
-  const year = document.getElementById('year');
   
+  let originalPrefix = prefix ? prefix.value : '';
   let originalFirstName = firstName.value;
   let originalLastName = lastName.value;
-  let originalFaculty = faculty.value;
-  let originalMajor = major.value;
-  let originalYear = year.value;
+  let originalMajor = major ? major.value : '';
   
-  // Check if any academic field can be edited
-  const canEditFaculty = !faculty.hasAttribute('readonly');
-  const canEditMajor = !major.hasAttribute('readonly');
-  const canEditYear = !year.hasAttribute('disabled') || year.value === 'ยังไม่ระบุ';
+  // Check if major can be edited (not yet selected)
+  const canEditMajor = major && !major.hasAttribute('readonly');
   
   // Enable editing
   editBtn.addEventListener('click', function() {
+    if (prefix) prefix.disabled = false;
     firstName.disabled = false;
     lastName.disabled = false;
     
-    // Enable academic fields only if they can be edited
-    if (canEditFaculty && faculty.value === 'ยังไม่ระบุ') {
-      faculty.disabled = false;
-    }
-    if (canEditMajor && major.value === 'ยังไม่ระบุ') {
+    // Enable major dropdown only if it can be edited
+    if (canEditMajor) {
       major.disabled = false;
-    }
-    if (canEditYear && year.value === 'ยังไม่ระบุ') {
-      year.disabled = false;
     }
     
     actions.classList.remove('d-none');
@@ -80,17 +71,15 @@ function handlePersonalInfoEdit() {
   
   // Cancel editing
   cancelBtn.addEventListener('click', function() {
+    if (prefix) prefix.value = originalPrefix;
     firstName.value = originalFirstName;
     lastName.value = originalLastName;
-    faculty.value = originalFaculty;
-    major.value = originalMajor;
-    year.value = originalYear;
+    if (major) major.value = originalMajor;
     
+    if (prefix) prefix.disabled = true;
     firstName.disabled = true;
     lastName.disabled = true;
-    faculty.disabled = true;
-    major.disabled = true;
-    year.disabled = true;
+    if (major) major.disabled = true;
     
     actions.classList.add('d-none');
     editBtn.style.display = 'block';
@@ -100,11 +89,10 @@ function handlePersonalInfoEdit() {
   form.addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    const newPrefix = prefix ? prefix.value.trim() : '';
     const newFirstName = firstName.value.trim();
     const newLastName = lastName.value.trim();
-    const newFaculty = faculty.value.trim();
-    const newMajor = major.value.trim();
-    const newYear = year.value;
+    const newMajor = major ? major.value.trim() : '';
     
     if (!newFirstName || !newLastName) {
       Swal.fire({
@@ -116,35 +104,42 @@ function handlePersonalInfoEdit() {
       return;
     }
     
-    // Validate academic fields if they are being edited
-    if (faculty.disabled === false && (!newFaculty || newFaculty === 'ยังไม่ระบุ')) {
-      Swal.fire({
+    // Validate major if it's being edited
+    if (canEditMajor && major && major.disabled === false) {
+      if (!newMajor || newMajor === '') {
+        Swal.fire({
+          icon: 'warning',
+          title: 'กรุณาเลือกสาขาวิชา',
+          text: 'คุณสามารถเลือกสาขาวิชาได้เพียงครั้งเดียว',
+          confirmButtonText: 'ตกลง'
+        });
+        return;
+      }
+      
+      // Show confirmation for major selection
+      const confirmResult = await Swal.fire({
+        title: 'ยืนยันการเลือกสาขาวิชา',
+        html: `
+          <p>คุณต้องการเลือกสาขาวิชา:</p>
+          <p class="text-primary fw-bold fs-5">${newMajor}</p>
+          <div class="alert alert-warning text-start mt-3">
+            <small><strong>⚠️ ข้อมูลสำคัช:</strong></small><br>
+            <small>• คุณสามารถเลือกสาขาวิชาได้<strong>เพียงครั้งเดียว</strong></small><br>
+            <small>• หลังจากบันทึกแล้ว <strong>จะไม่สามารถเปลี่ยนแปลงได้</strong></small><br>
+            <small>• กรุณาตรวจสอบอีกครั้งก่อนบันทึก</small>
+          </div>
+        `,
         icon: 'warning',
-        title: 'กรุณาระบุคณะ',
-        text: 'คุณสามารถแก้ไขคณะได้เพียงครั้งเดียว',
-        confirmButtonText: 'ตกลง'
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยันและบันทึก',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#2C08C9',
+        cancelButtonColor: '#6c757d'
       });
-      return;
-    }
-    
-    if (major.disabled === false && (!newMajor || newMajor === 'ยังไม่ระบุ')) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'กรุณาระบุสาขาวิชา',
-        text: 'คุณสามารถแก้ไขสาขาวิชาได้เพียงครั้งเดียว',
-        confirmButtonText: 'ตกลง'
-      });
-      return;
-    }
-    
-    if (year.disabled === false && newYear === 'ยังไม่ระบุ') {
-      Swal.fire({
-        icon: 'warning',
-        title: 'กรุณาระบุชั้นปี',
-        text: 'คุณสามารถแก้ไขชั้นปีได้เพียงครั้งเดียว',
-        confirmButtonText: 'ตกลง'
-      });
-      return;
+      
+      if (!confirmResult.isConfirmed) {
+        return;
+      }
     }
     
     // Show loading
@@ -160,19 +155,14 @@ function handlePersonalInfoEdit() {
     try {
       // Prepare data to send
       const updateData = {
+        prefix: newPrefix,
         firstName: newFirstName,
         lastName: newLastName
       };
       
-      // Add academic fields if they were edited
-      if (faculty.disabled === false && newFaculty !== 'ยังไม่ระบุ') {
-        updateData.faculty = newFaculty;
-      }
-      if (major.disabled === false && newMajor !== 'ยังไม่ระบุ') {
+      // Add major if it was edited
+      if (canEditMajor && major && major.disabled === false && newMajor) {
         updateData.major = newMajor;
-      }
-      if (year.disabled === false && newYear !== 'ยังไม่ระบุ') {
-        updateData.year = newYear;
       }
       
       const response = await fetch('/survey/update-personal-info', {
@@ -186,28 +176,20 @@ function handlePersonalInfoEdit() {
       const result = await response.json();
       
       if (response.ok) {
+        originalPrefix = newPrefix;
         originalFirstName = newFirstName;
         originalLastName = newLastName;
         
-        // Update original values for academic fields
-        if (updateData.faculty) {
-          originalFaculty = newFaculty;
-          faculty.setAttribute('readonly', 'readonly');
-        }
+        // Update original major value if it was changed
         if (updateData.major) {
           originalMajor = newMajor;
-          major.setAttribute('readonly', 'readonly');
-        }
-        if (updateData.year) {
-          originalYear = newYear;
-          year.setAttribute('disabled', 'disabled');
+          if (major) major.setAttribute('readonly', 'readonly');
         }
         
+        if (prefix) prefix.disabled = true;
         firstName.disabled = true;
         lastName.disabled = true;
-        faculty.disabled = true;
-        major.disabled = true;
-        year.disabled = true;
+        if (major) major.disabled = true;
         
         actions.classList.add('d-none');
         editBtn.style.display = 'block';
@@ -215,8 +197,8 @@ function handlePersonalInfoEdit() {
         Swal.fire({
           icon: 'success',
           title: 'บันทึกข้อมูลสำเร็จ',
-          text: updateData.faculty || updateData.major || updateData.year 
-            ? 'ข้อมูลของคุณได้รับการบันทึกแล้ว ข้อมูลที่บันทึกไปแล้วจะไม่สามารถแก้ไขได้อีก' 
+          text: updateData.major 
+            ? 'ข้อมูลของคุณได้รับการบันทึกแล้ว สาขาวิชาที่บันทึกไม่สามารถแก้ไขได้อีก' 
             : 'ข้อมูลของคุณได้รับการบันทึกแล้ว',
           timer: 3000,
           showConfirmButton: true

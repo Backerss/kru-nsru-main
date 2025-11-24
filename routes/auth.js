@@ -47,14 +47,10 @@ router.get('/register', (req, res) => {
 // Register POST
 router.post('/register', async (req, res) => {
   const {
-    studentId,
     prefix,
     firstName,
     lastName,
-    birthdate,
-    age,
     email,
-    phone,
     password,
     confirmPassword,
     agreePolicy
@@ -79,22 +75,8 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'รูปแบบอีเมลไม่ถูกต้อง' });
   }
 
-  // Phone validation (basic Thai phone number)
-  const phoneRegex = /^[0-9]{9,10}$/;
-  if (!phoneRegex.test(phone.replace(/[-\s]/g, ''))) {
-    return res.status(400).json({ error: 'รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง' });
-  }
-
   try {
     const db = req.app.get('db');
-
-    // Check if user exists (by studentId)
-    const userRef = db.collection('users').doc(studentId);
-    const doc = await userRef.get();
-
-    if (doc.exists) {
-      return res.status(400).json({ error: 'รหัสนักศึกษานี้มีในระบบแล้ว' });
-    }
 
     // Check if email exists
     const emailQuery = await db.collection('users').where('email', '==', email).get();
@@ -105,24 +87,23 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Save to Firestore
-    const userData = {
-      studentId,
+    // Save to Firestore with auto-generated ID
+    const userRef = await db.collection('users').add({
       prefix,
       firstName,
       lastName,
-      birthdate,
-      age: parseInt(age) || 0,
       email,
-      phone,
       password: hashedPassword,
       createdAt: new Date().toISOString(),
       role: 'student'
-    };
+    });
 
-    await userRef.set(userData);
+    // Update document with its own ID as uid
+    await userRef.update({
+      uid: userRef.id
+    });
 
-    console.log('New registration:', studentId);
+    console.log('New registration:', userRef.id);
 
     res.json({
       success: true,
@@ -144,51 +125,50 @@ router.get('/login', (req, res) => {
 
 // Login POST
 router.post('/login', async (req, res) => {
-  const { studentId, password, rememberMe } = req.body;
+  const { email, password, rememberMe } = req.body;
 
   // Basic validation
-  if (!studentId || !password) {
+  if (!email || !password) {
     return res.status(400).json({
-      error: 'กรุณากรอกรหัสนักศึกษาและรหัสผ่าน'
+      error: 'กรุณากรอกอีเมลและรหัสผ่าน'
     });
   }
 
   try {
     const db = req.app.get('db');
 
-    // Get user from Firestore
-    const userRef = db.collection('users').doc(studentId);
-    const doc = await userRef.get();
+    // Get user from Firestore by email
+    const userQuery = await db.collection('users').where('email', '==', email).limit(1).get();
 
-    if (!doc.exists) {
+    if (userQuery.empty) {
       return res.status(401).json({
-        error: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง'
+        error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
       });
     }
 
+    const doc = userQuery.docs[0];
     const userData = doc.data();
+    const userId = doc.id;
 
     // Verify password
     const match = await bcrypt.compare(password, userData.password);
 
     if (!match) {
       return res.status(401).json({
-        error: 'รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง'
+        error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง'
       });
     }
 
     // Login successful - Store user data in session
-    req.session.userId = studentId;
+    req.session.userId = userId;
+    req.session.userEmail = userData.email; // เพิ่ม email ใน session
     req.session.userData = {
-      studentId: userData.studentId,
+      uid: userId,
       prefix: userData.prefix,
       firstName: userData.firstName,
       lastName: userData.lastName,
       email: userData.email,
-      phone: userData.phone,
-      age: userData.age,
-      birthdate: userData.birthdate,
-      role: userData.role
+      role: userData.role || 'student'
     };
 
     // Update remember me cookie if checked
@@ -196,15 +176,16 @@ router.post('/login', async (req, res) => {
       req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
     }
 
-    console.log('User logged in:', { studentId, rememberMe, timestamp: new Date().toISOString() });
+    console.log('User logged in:', { userId, email, rememberMe, timestamp: new Date().toISOString() });
 
     res.json({
       success: true,
       message: `เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${userData.firstName} ${userData.lastName}`,
       redirectUrl: '/survey/home',
       user: {
-        studentId: userData.studentId,
-        name: `${userData.prefix}${userData.firstName} ${userData.lastName}`
+        uid: userId,
+        name: `${userData.prefix}${userData.firstName} ${userData.lastName}`,
+        email: userData.email
       }
     });
   } catch (error) {
@@ -260,6 +241,7 @@ router.get('/auth/google/callback',
         if (userData.authProvider === 'google') {
           // Login สำเร็จสำหรับบัญชี Google OAuth
           req.session.userId = docSnap.id;
+          req.session.userEmail = userData.email; // เพิ่ม email ใน session
           req.session.userData = {
             studentId: userData.studentId,
             prefix: userData.prefix,

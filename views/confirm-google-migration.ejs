@@ -89,10 +89,6 @@
                                 <i class="bi bi-person-circle me-2"></i>ข้อมูลบัญชีของคุณ
                             </h5>
                             <div class="info-item">
-                                <i class="bi bi-card-text"></i>
-                                <span><strong>รหัสนักศึกษา:</strong> <%= userData.studentId %></span>
-                            </div>
-                            <div class="info-item">
                                 <i class="bi bi-person"></i>
                                 <span><strong>ชื่อ-นามสกุล:</strong> <%= userData.prefix %><%= userData.firstName %> <%= userData.lastName %></span>
                             </div>
@@ -100,6 +96,18 @@
                                 <i class="bi bi-envelope"></i>
                                 <span><strong>อีเมล:</strong> <%= email %></span>
                             </div>
+                            <% if (userData.faculty && userData.faculty !== 'ยังไม่ระบุ') { %>
+                            <div class="info-item">
+                                <i class="bi bi-building"></i>
+                                <span><strong>คณะ:</strong> <%= userData.faculty %></span>
+                            </div>
+                            <% } %>
+                            <% if (userData.major && userData.major !== 'ยังไม่ระบุ') { %>
+                            <div class="info-item">
+                                <i class="bi bi-book"></i>
+                                <span><strong>สาขา:</strong> <%= userData.major %></span>
+                            </div>
+                            <% } %>
                         </div>
 
                         <!-- Warning Box -->

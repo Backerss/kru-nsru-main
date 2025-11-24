@@ -619,30 +619,12 @@ function initUserManagement() {
       }
 
       // Fill form with user data
-      // Keep original uid hidden (used for URL), allow editing the visible student id
-      document.getElementById('edit_originalStudentId').value = (userData.uid || userData.studentId || '');
-      document.getElementById('edit_studentId_display').value = userData.studentId || '';
+      document.getElementById('edit_uid').value = userData.uid || '';
       document.getElementById('edit_prefix').value = prefix;
       document.getElementById('edit_firstName').value = firstName;
       document.getElementById('edit_lastName').value = userData.lastName || '';
       document.getElementById('edit_email').value = userData.email || '';
-      document.getElementById('edit_phone').value = userData.phone || '';
-      // Compute age from birthdate when available, otherwise fallback to stored age
-      document.getElementById('edit_birthdate').value = userData.birthdate || '';
-      const computedAge = computeAgeFromBirthdate(userData.birthdate) || userData.age || '';
-      document.getElementById('edit_age').value = computedAge;
-      document.getElementById('edit_faculty').value = (userData.faculty && userData.faculty !== 'ยังไม่ระบุ') ? userData.faculty : '';
-      document.getElementById('edit_major').value = (userData.major && userData.major !== 'ยังไม่ระบุ') ? userData.major : '';
-      document.getElementById('edit_year').value = (userData.year && userData.year !== 'ยังไม่ระบุ') ? userData.year : '';
       document.getElementById('edit_role').value = userData.role || 'student';
-
-      // Show/hide Google OAuth notice
-      const googleAuthNotice = document.getElementById('googleAuthNotice');
-      if (userData.authProvider === 'google') {
-        googleAuthNotice.style.display = 'block';
-      } else {
-        googleAuthNotice.style.display = 'none';
-      }
 
       editUserModal.show();
     });
@@ -658,9 +640,8 @@ function initUserManagement() {
 
     const formData = new FormData(form);
     const userData = Object.fromEntries(formData);
-    const originalId = userData.originalStudentId; // now holds uid
-    delete userData.originalStudentId; // not part of body
-    const studentIdForUrl = originalId || userData.studentId;
+    const uid = userData.uid;
+    delete userData.uid; // uid used in URL, not body
 
     try {
       Swal.fire({
@@ -672,7 +653,7 @@ function initUserManagement() {
         }
       });
 
-      const response = await fetch(`/admin/api/users/${encodeURIComponent(studentIdForUrl)}`, {
+      const response = await fetch(`/admin/api/users/${encodeURIComponent(uid)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -710,7 +691,7 @@ function initUserManagement() {
   // Delete User Buttons
   document.querySelectorAll('.btn-delete-user').forEach(btn => {
     btn.addEventListener('click', async function () {
-      const studentId = this.dataset.studentId;
+      const uid = this.dataset.uid;
       const name = this.dataset.name;
 
       const result = await Swal.fire({
@@ -726,7 +707,7 @@ function initUserManagement() {
 
       if (result.isConfirmed) {
         try {
-          const response = await fetch(`/admin/api/users/${studentId}`, {
+          const response = await fetch(`/admin/api/users/${uid}`, {
             method: 'DELETE'
           });
 
@@ -759,7 +740,7 @@ function initUserManagement() {
   // Disconnect Google OAuth Buttons
   document.querySelectorAll('.btn-disconnect-google').forEach(btn => {
     btn.addEventListener('click', async function () {
-      const studentId = this.dataset.studentId;
+      const uid = this.dataset.uid;
       const name = this.dataset.name;
       const email = this.dataset.email;
 
@@ -802,7 +783,7 @@ function initUserManagement() {
       });
 
       try {
-        const response = await fetch(`/admin/api/users/${studentId}/disconnect-google`, {
+        const response = await fetch(`/admin/api/users/${uid}/disconnect-google`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -853,23 +834,15 @@ function initUserManagement() {
 
 // Update user row in table
 function updateUserRowInTable(userData) {
-  // ใช้ uid หาแถวแทน studentId เพราะ studentId อาจเปลี่ยน
+  // ใช้ uid หาแถวแทน studentId
   const uid = userData.uid;
   let row = null;
   
   // หาแถวจาก data-uid attribute
-  const allRows = document.querySelectorAll('tr[data-student-id]');
+  const allRows = document.querySelectorAll('tr[data-uid]');
   allRows.forEach(r => {
-    const editBtn = r.querySelector('.btn-edit-user');
-    if (editBtn) {
-      try {
-        const rowData = JSON.parse(editBtn.dataset.user);
-        if (rowData.uid === uid || rowData.studentId === uid) {
-          row = r;
-        }
-      } catch (e) {
-        // Skip invalid JSON
-      }
+    if (r.dataset.uid === uid) {
+      row = r;
     }
   });
   
@@ -883,21 +856,16 @@ function updateUserRowInTable(userData) {
   const fullName = `${userData.prefix || ''}${userData.firstName} ${userData.lastName}`;
 
   // อัปเดต data attributes ทั้งหมดที่ใช้งานบนแถว
-  row.dataset.studentId = userData.studentId || '';
-  row.dataset.name = fullName || '';
-  row.dataset.email = userData.email || '';
+  row.dataset.uid = userData.uid || '';
   row.dataset.role = userData.role || '';
   row.dataset.authProvider = userData.authProvider || 'email';
-  row.dataset.faculty = userData.faculty || '';
-  row.dataset.major = userData.major || '';
-  row.dataset.year = userData.year || '';
 
   // อัปเดต badge role
   const roleBadges = {
-    'student': '<span class="badge bg-primary">นักศึกษา</span>',
-    'teacher': '<span class="badge bg-success">อาจารย์</span>',
+    'student': '<span class="badge bg-secondary">นักศึกษา</span>',
+    'teacher': '<span class="badge bg-warning">อาจารย์</span>',
     'admin': '<span class="badge bg-danger">แอดมิน</span>',
-    'person': '<span class="badge bg-secondary">บุคคลธรรมดา</span>'
+    'person': '<span class="badge bg-info">บุคคลธรรมดา</span>'
   };
 
   // อัปเดต auth provider badge
@@ -906,36 +874,30 @@ function updateUserRowInTable(userData) {
     'google': '<span class="badge bg-light text-dark"><i class="bi bi-google me-1"></i>Google</span>'
   };
 
-  // อัปเดตเซลล์ในตาราง โดยแมปคอลัมน์ตามโครงสร้างปัจจุบัน
+  // อัปเดตเซลล์ในตาราง (โครงสร้างใหม่: ชื่อ-นามสกุล, อีเมล, Role, การเข้าสู่ระบบ, จัดการ)
   const cells = row.querySelectorAll('td');
-  if (cells.length >= 7) {
-    // คอลัมน์ตามลำดับ: 0=studentId,1=name,2=email,3=faculty,4=major,5=year,6=role,7=auth,8=actions
-    // ปรับค่าตามที่มีอยู่ (fallback ถ้า index เกิน)
-    if (cells[0]) cells[0].textContent = userData.studentId || '';
-    if (cells[1]) cells[1].innerHTML = `<strong>${fullName}</strong>`;
-    if (cells[2]) cells[2].textContent = userData.email || '';
-    if (cells[3]) cells[3].textContent = userData.faculty || 'ยังไม่ระบุ';
-    if (cells[4]) cells[4].textContent = userData.major || 'ยังไม่ระบุ';
-    if (cells[5]) cells[5].textContent = userData.year || 'ยังไม่ระบุ';
-    if (cells[6]) cells[6].innerHTML = roleBadges[userData.role] || `<span class="badge bg-secondary">${userData.role || 'นักศึกษา'}</span>`;
-    if (cells[7]) cells[7].innerHTML = authBadges[userData.authProvider || 'email'] || '';
+  if (cells.length >= 5) {
+    if (cells[0]) cells[0].textContent = fullName;
+    if (cells[1]) cells[1].textContent = userData.email || '';
+    if (cells[2]) cells[2].innerHTML = roleBadges[userData.role] || '<span class="badge bg-secondary">นักศึกษา</span>';
+    if (cells[3]) cells[3].innerHTML = authBadges[userData.authProvider || 'email'] || '';
 
     // อัปเดต data ในปุ่มภายในคอลัมน์ actions
     const editBtn = row.querySelector('.btn-edit-user');
     if (editBtn) {
       try { editBtn.dataset.user = JSON.stringify(userData); } catch (e) { editBtn.setAttribute('data-user', JSON.stringify(userData)); }
-      editBtn.dataset.studentId = userData.studentId || '';
+      editBtn.dataset.uid = userData.uid || '';
     }
 
     const deleteBtn = row.querySelector('.btn-delete-user');
     if (deleteBtn) {
-      deleteBtn.dataset.studentId = userData.studentId || '';
+      deleteBtn.dataset.uid = userData.uid || '';
       deleteBtn.dataset.name = fullName || '';
     }
 
     const googleBtn = row.querySelector('.btn-disconnect-google');
     if (googleBtn) {
-      googleBtn.dataset.studentId = userData.studentId || '';
+      googleBtn.dataset.uid = userData.uid || '';
       googleBtn.dataset.name = fullName || '';
       googleBtn.dataset.email = userData.email || '';
     }
@@ -1142,19 +1104,15 @@ function updateTableWithNewData(users) {
 
     // Action buttons: disconnect (if google), edit, delete — match EJS order and classes
     const disconnectBtn = userData.authProvider === 'google' ?
-      `<button class="btn btn-outline-warning btn-disconnect-google" data-student-id="${userData.studentId}" data-name="${fullName}" data-email="${userData.email}" title="ยกเลิกการเชื่อมต่อ Google"><i class="bi bi-x-circle"></i></button>`
+      `<button class="btn btn-outline-warning btn-disconnect-google" data-uid="${userData.uid}" data-name="${fullName}" data-email="${userData.email}" title="ยกเลิกการเชื่อมต่อ Google"><i class="bi bi-x-circle"></i></button>`
       : '';
 
     const escapedUserJson = JSON.stringify(userData).replace(/'/g, "&#39;");
 
     return `
-      <tr data-student-id="${userData.studentId}" data-role="${userData.role}" data-user='${escapedUserJson}' data-auth-provider="${userData.authProvider || 'email'}" data-faculty="${userData.faculty || ''}" data-major="${userData.major || ''}" data-year="${userData.year || ''}">
-        <td>${userData.studentId}</td>
+      <tr data-uid="${userData.uid}" data-role="${userData.role}">
         <td>${fullName}</td>
         <td>${userData.email || ''}</td>
-        <td class="d-none d-md-table-cell">${userData.faculty || 'ยังไม่ระบุ'}</td>
-        <td class="d-none d-lg-table-cell">${userData.major || 'ยังไม่ระบุ'}</td>
-        <td class="d-none d-lg-table-cell">${userData.year || 'ยังไม่ระบุ'}</td>
         <td>
           <span class="badge bg-${roleBadgeClass}">${roleLabel}</span>
         </td>
@@ -1164,10 +1122,10 @@ function updateTableWithNewData(users) {
         <td>
           <div class="btn-group btn-group-sm">
             ${disconnectBtn}
-            <button class="btn btn-outline-primary btn-edit-user" data-student-id="${userData.studentId}" data-user='${escapedUserJson}' title="แก้ไขข้อมูล">
+            <button class="btn btn-outline-primary btn-edit-user" data-uid="${userData.uid}" data-user='${escapedUserJson}' title="แก้ไขข้อมูล">
               <i class="bi bi-pencil"></i>
             </button>
-            <button class="btn btn-outline-danger btn-delete-user" data-student-id="${userData.studentId}" data-name="${fullName}" title="ลบผู้ใช้">
+            <button class="btn btn-outline-danger btn-delete-user" data-uid="${userData.uid}" data-name="${fullName}" title="ลบผู้ใช้">
               <i class="bi bi-trash"></i>
             </button>
           </div>
@@ -1211,27 +1169,12 @@ function rebindUserTableEvents() {
         }
       }
 
-      document.getElementById('edit_originalStudentId').value = (userData.uid || userData.studentId || '');
-      document.getElementById('edit_studentId_display').value = userData.studentId || '';
+      document.getElementById('edit_uid').value = userData.uid || '';
       document.getElementById('edit_prefix').value = prefix;
       document.getElementById('edit_firstName').value = firstName;
       document.getElementById('edit_lastName').value = userData.lastName || '';
       document.getElementById('edit_email').value = userData.email || '';
-      document.getElementById('edit_phone').value = userData.phone || '';
-      document.getElementById('edit_birthdate').value = userData.birthdate || '';
-      const computedAge = computeAgeFromBirthdate(userData.birthdate) || userData.age || '';
-      document.getElementById('edit_age').value = computedAge;
-      document.getElementById('edit_faculty').value = (userData.faculty && userData.faculty !== 'ยังไม่ระบุ') ? userData.faculty : '';
-      document.getElementById('edit_major').value = (userData.major && userData.major !== 'ยังไม่ระบุ') ? userData.major : '';
-      document.getElementById('edit_year').value = (userData.year && userData.year !== 'ยังไม่ระบุ') ? userData.year : '';
       document.getElementById('edit_role').value = userData.role || 'student';
-
-      const googleAuthNotice = document.getElementById('googleAuthNotice');
-      if (userData.authProvider === 'google') {
-        googleAuthNotice.style.display = 'block';
-      } else {
-        googleAuthNotice.style.display = 'none';
-      }
 
       editUserModal.show();
     });
@@ -1240,7 +1183,7 @@ function rebindUserTableEvents() {
   // Delete User Buttons
   document.querySelectorAll('.btn-delete-user').forEach(btn => {
     btn.addEventListener('click', async function () {
-      const studentId = this.dataset.studentId;
+      const uid = this.dataset.uid;
       const name = this.dataset.name;
 
       const result = await Swal.fire({
@@ -1256,7 +1199,7 @@ function rebindUserTableEvents() {
 
       if (result.isConfirmed) {
         try {
-          const response = await fetch(`/admin/api/users/${studentId}`, {
+          const response = await fetch(`/admin/api/users/${uid}`, {
             method: 'DELETE'
           });
 
@@ -1289,7 +1232,7 @@ function rebindUserTableEvents() {
   // Disconnect Google OAuth Buttons
   document.querySelectorAll('.btn-disconnect-google').forEach(btn => {
     btn.addEventListener('click', async function () {
-      const studentId = this.dataset.studentId;
+      const uid = this.dataset.uid;
       const name = this.dataset.name;
       const email = this.dataset.email;
 
@@ -1331,7 +1274,7 @@ function rebindUserTableEvents() {
       });
 
       try {
-        const response = await fetch(`/admin/api/users/${studentId}/disconnect-google`, {
+        const response = await fetch(`/admin/api/users/${uid}/disconnect-google`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

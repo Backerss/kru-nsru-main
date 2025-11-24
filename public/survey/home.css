@@ -151,6 +151,56 @@ main {
   margin: 0;
 }
 
+.info-value .bi-lock-fill {
+  font-size: 0.875rem;
+}
+
+.info-value .bi-check-circle-fill {
+  font-size: 1rem;
+}
+
+/* Major Selection */
+#majorSelect {
+  border: 2px solid var(--color-secondary-2);
+  transition: all 0.3s ease;
+}
+
+#majorSelect:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0.2rem rgba(44, 8, 201, 0.25);
+}
+
+#saveMajorBtn {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  min-width: 80px;
+}
+
+#saveMajorBtn:hover:not(:disabled) {
+  background: #2306a8;
+  border-color: #2306a8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(44, 8, 201, 0.3);
+}
+
+#saveMajorBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.badge.bg-warning {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
 /* Quick Actions */
 .quick-action-card {
   display: flex;

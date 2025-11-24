@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Handle logout buttons
   initLogoutHandlers();
+
+  // Handle major selection and save
+  initMajorSelection();
 });
 
 function initSmoothTransitions() {
@@ -90,6 +93,116 @@ function handleLogout() {
   }).then((result) => {
     if (result.isConfirmed) {
       window.location.href = '/logout';
+    }
+  });
+}
+
+function initMajorSelection() {
+  const majorSelect = document.getElementById('majorSelect');
+  const saveMajorBtn = document.getElementById('saveMajorBtn');
+  
+  if (!majorSelect || !saveMajorBtn) return;
+
+  // Enable save button when major is selected
+  majorSelect.addEventListener('change', function() {
+    if (this.value) {
+      saveMajorBtn.disabled = false;
+    } else {
+      saveMajorBtn.disabled = true;
+    }
+  });
+
+  // Handle save button click
+  saveMajorBtn.addEventListener('click', async function() {
+    const selectedMajor = majorSelect.value;
+    
+    if (!selectedMajor) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'กรุณาเลือกสาขาวิชา',
+        text: 'โปรดเลือกสาขาวิชาก่อนบันทึก',
+        confirmButtonText: 'ตกลง'
+      });
+      return;
+    }
+
+    // Confirm before saving
+    const result = await Swal.fire({
+      title: 'ยืนยันการบันทึก?',
+      html: `
+        <p class="mb-3">คุณต้องการบันทึกสาขาวิชาเป็น:</p>
+        <div class="alert alert-info mb-3">
+          <strong class="fs-5">${selectedMajor}</strong>
+        </div>
+        <div class="alert alert-warning mb-0">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <strong>คำเตือน:</strong> คุณสามารถเลือกสาขาได้เพียงครั้งเดียวเท่านั้น<br>
+          และไม่สามารถแก้ไขได้อีกในภายหลัง
+        </div>
+      `,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'ยืนยัน บันทึกเลย',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#2C08C9',
+      cancelButtonColor: '#6c757d',
+      reverseButtons: true
+    });
+
+    if (!result.isConfirmed) return;
+
+    // Show loading
+    Swal.fire({
+      title: 'กำลังบันทึก...',
+      html: 'กรุณารอสักครู่',
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      // Send update request to server
+      const response = await fetch('/survey/update-major', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          major: selectedMajor,
+          faculty: 'คณะครุศาสตร์',
+          year: '4'
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        await Swal.fire({
+          icon: 'success',
+          title: 'บันทึกสำเร็จ!',
+          html: `
+            <p>บันทึกสาขาวิชา <strong>${selectedMajor}</strong> เรียบร้อยแล้ว</p>
+            <small class="text-muted">หน้าเว็บจะรีเฟรชอัตโนมัติ</small>
+          `,
+          timer: 2000,
+          showConfirmButton: false
+        });
+        
+        // Reload page to show updated data
+        window.location.reload();
+      } else {
+        throw new Error(data.message || 'เกิดข้อผิดพลาดในการบันทึก');
+      }
+    } catch (error) {
+      console.error('Error saving major:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'เกิดข้อผิดพลาด',
+        text: error.message || 'ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+        confirmButtonText: 'ตกลง'
+      });
     }
   });
 }

@@ -388,12 +388,8 @@
               <table class="table table-hover mb-0" id="usersTable">
                 <thead class="table-light">
                   <tr>
-                    <th>รหัสนักศึกษา</th>
                     <th>ชื่อ-นามสกุล</th>
                     <th>อีเมล</th>
-                    <th class="d-none d-md-table-cell">คณะ</th>
-                    <th class="d-none d-lg-table-cell">สาขา</th>
-                    <th class="d-none d-lg-table-cell">ชั้นปี</th>
                     <th>Role</th>
                     <th class="d-none d-xl-table-cell">การเข้าสู่ระบบ</th>
                     <th>จัดการ</th>
@@ -402,13 +398,9 @@
                 <tbody>
                   <% if (users && users.length > 0) { %>
                     <% users.forEach(user => { %>
-                    <tr data-student-id="<%= user.studentId %>" data-role="<%= user.role %>">
-                      <td><%= user.studentId %></td>
-                      <td><%= user.name %></td>
+                    <tr data-uid="<%= user.uid %>" data-role="<%= user.role %>">
+                      <td><%= user.prefix || '' %><%= user.firstName %> <%= user.lastName %></td>
                       <td><%= user.email %></td>
-                      <td class="d-none d-md-table-cell"><%= user.faculty %></td>
-                      <td class="d-none d-lg-table-cell"><%= user.major %></td>
-                      <td class="d-none d-lg-table-cell"><%= user.year %></td>
                       <td>
                         <span class="badge bg-<%= user.role === 'admin' ? 'danger' : user.role === 'teacher' ? 'warning' : user.role === 'person' ? 'info' : 'secondary' %>">
                           <%= user.role === 'admin' ? 'ผู้ดูแลระบบ' : user.role === 'teacher' ? 'อาจารย์' : user.role === 'person' ? 'บุคคลธรรมดา' : 'นักศึกษา' %>
@@ -429,22 +421,22 @@
                         <div class="btn-group btn-group-sm">
                           <% if (user.authProvider === 'google') { %>
                           <button class="btn btn-outline-warning btn-disconnect-google" 
-                                  data-student-id="<%= user.studentId %>"
-                                  data-name="<%= user.name %>"
+                                  data-uid="<%= user.uid %>"
+                                  data-name="<%= user.prefix || '' %><%= user.firstName %> <%= user.lastName %>"
                                   data-email="<%= user.email %>"
                                   title="ยกเลิกการเชื่อมต่อ Google">
                             <i class="bi bi-x-circle"></i>
                           </button>
                           <% } %>
                           <button class="btn btn-outline-primary btn-edit-user" 
-                                  data-student-id="<%= user.studentId %>"
+                                  data-uid="<%= user.uid %>"
                                   data-user='<%- JSON.stringify(user) %>'
                                   title="แก้ไขข้อมูล">
                             <i class="bi bi-pencil"></i>
                           </button>
                           <button class="btn btn-outline-danger btn-delete-user" 
-                                  data-student-id="<%= user.studentId %>"
-                                  data-name="<%= user.name %>"
+                                  data-uid="<%= user.uid %>"
+                                  data-name="<%= user.prefix || '' %><%= user.firstName %> <%= user.lastName %>"
                                   title="ลบผู้ใช้">
                             <i class="bi bi-trash"></i>
                           </button>
@@ -454,7 +446,7 @@
                     <% }); %>
                   <% } else { %>
                     <tr>
-                      <td colspan="9" class="text-center text-muted py-5">
+                      <td colspan="5" class="text-center text-muted py-5">
                         <i class="bi bi-inbox display-4 d-block mb-3"></i>
                         ยังไม่มีข้อมูลผู้ใช้
                       </td>
@@ -491,11 +483,7 @@
         <div class="modal-body">
           <form id="addUserForm">
             <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">รหัสนักศึกษา <span class="text-danger">*</span></label>
-                <input type="text" class="form-control" name="studentId" required>
-              </div>
-              <div class="col-md-6">
+              <div class="col-md-3">
                 <label class="form-label">คำนำหน้า</label>
                 <select class="form-select" name="prefix">
                   <option value="">เลือกคำนำหน้า</option>
@@ -504,11 +492,11 @@
                   <option value="นาง">นาง</option>
                 </select>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <label class="form-label">ชื่อ <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" name="firstName" required>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-5">
                 <label class="form-label">นามสกุล <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" name="lastName" required>
               </div>
@@ -521,51 +509,13 @@
                 <input type="password" class="form-control" name="password" minlength="6" required>
                 <small class="text-muted">อย่างน้อย 6 ตัวอักษร</small>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">เบอร์โทรศัพท์</label>
-                <input type="tel" class="form-control" name="phone">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">อายุ</label>
-                <input type="number" class="form-control" name="age" id="add_age" min="1" max="150" readonly>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">วันเกิด</label>
-                <input type="date" class="form-control" name="birthdate">
-              </div>
-              <div class="col-md-6">
+              <div class="col-12">
                 <label class="form-label">Role</label>
                 <select class="form-select" name="role">
                   <option value="student">นักศึกษา</option>
                   <option value="teacher">อาจารย์</option>
                   <option value="admin">ผู้ดูแลระบบ</option>
                   <option value="person">บุคคลธรรมดา</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">คณะ</label>
-                <select class="form-select" name="faculty">
-                  <option value="">เลือกคณะ</option>
-                  <option value="คณะครุศาสตร์">คณะครุศาสตร์</option>
-                  <option value="คณะมนุษยศาสตร์และสังคมศาสตร์">คณะมนุษยศาสตร์และสังคมศาสตร์</option>
-                  <option value="คณะวิทยาศาสตร์และเทคโนโลยี">คณะวิทยาศาสตร์และเทคโนโลยี</option>
-                  <option value="คณะวิทยาการจัดการ">คณะวิทยาการจัดการ</option>
-                  <option value="คณะเทคโนโลยีการเกษตร">คณะเทคโนโลยีการเกษตร</option>
-                  <option value="คณะเทคโนโลยีอุตสาหกรรม">คณะเทคโนโลยีอุตสาหกรรม</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">สาขา</label>
-                <input type="text" class="form-control" name="major">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">ชั้นปี</label>
-                <select class="form-select" name="year">
-                  <option value="">เลือกชั้นปี</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
                 </select>
               </div>
             </div>
@@ -591,13 +541,9 @@
         </div>
         <div class="modal-body">
           <form id="editUserForm">
-            <input type="hidden" name="originalStudentId" id="edit_originalStudentId">
+            <input type="hidden" name="uid" id="edit_uid">
             <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">รหัสนักศึกษา</label>
-                <input type="text" class="form-control" name="studentId" id="edit_studentId_display">
-              </div>
-              <div class="col-md-6">
+              <div class="col-md-3">
                 <label class="form-label">คำนำหน้า</label>
                 <select class="form-select" name="prefix" id="edit_prefix">
                   <option value="">เลือกคำนำหน้า</option>
@@ -606,21 +552,17 @@
                   <option value="นาง">นาง</option>
                 </select>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <label class="form-label">ชื่อ <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" name="firstName" id="edit_firstName" required>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-5">
                 <label class="form-label">นามสกุล <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" name="lastName" id="edit_lastName" required>
               </div>
-              <div class="col-md-6">
+              <div class="col-12">
                 <label class="form-label">อีเมล <span class="text-danger">*</span></label>
                 <input type="email" class="form-control" name="email" id="edit_email" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">เบอร์โทรศัพท์</label>
-                <input type="tel" class="form-control" name="phone" id="edit_phone">
               </div>
               <div class="col-12" id="googleAuthNotice" style="display: none;">
                 <div class="alert alert-info">
@@ -630,47 +572,13 @@
                   หากต้องการเปลี่ยนเป็นการเข้าด้วยรหัสผ่าน กรุณาใช้ปุ่ม "ยกเลิกการเชื่อมต่อ Google" ในตารางจัดการผู้ใช้</small>
                 </div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">อายุ</label>
-                <input type="number" class="form-control" name="age" id="edit_age" min="1" max="150" readonly>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">วันเกิด</label>
-                <input type="date" class="form-control" name="birthdate" id="edit_birthdate">
-              </div>
-              <div class="col-md-6">
+              <div class="col-12">
                 <label class="form-label">Role</label>
                 <select class="form-select" name="role" id="edit_role">
                   <option value="student">นักศึกษา</option>
                   <option value="teacher">อาจารย์</option>
                   <option value="admin">ผู้ดูแลระบบ</option>
                   <option value="person">บุคคลธรรมดา</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">คณะ</label>
-                <select class="form-select" name="faculty" id="edit_faculty">
-                  <option value="">เลือกคณะ</option>
-                  <option value="คณะครุศาสตร์">คณะครุศาสตร์</option>
-                  <option value="คณะมนุษยศาสตร์และสังคมศาสตร์">คณะมนุษยศาสตร์และสังคมศาสตร์</option>
-                  <option value="คณะวิทยาศาสตร์และเทคโนโลยี">คณะวิทยาศาสตร์และเทคโนโลยี</option>
-                  <option value="คณะวิทยาการจัดการ">คณะวิทยาการจัดการ</option>
-                  <option value="คณะเทคโนโลยีการเกษตร">คณะเทคโนโลยีการเกษตร</option>
-                  <option value="คณะเทคโนโลยีอุตสาหกรรม">คณะเทคโนโลยีอุตสาหกรรม</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">สาขา</label>
-                <input type="text" class="form-control" name="major" id="edit_major">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">ชั้นปี</label>
-                <select class="form-select" name="year" id="edit_year">
-                  <option value="">เลือกชั้นปี</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
                 </select>
               </div>
             </div>

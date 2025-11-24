@@ -19,7 +19,7 @@
                     <div class="login-card">
                         <div class="text-center mb-4">
                             <h1 class="login-title"><%= title %></h1>
-                            <p class="text-muted">เข้าสู่ระบบด้วยรหัสนักศึกษา</p>
+                            <p class="text-muted">เข้าสู่ระบบด้วยอีเมล</p>
                         </div>
 
                         <!-- Google OAuth Section -->
@@ -46,11 +46,11 @@
                         </div>
 
                         <form action="/login" method="POST" class="login-form" id="loginForm">
-                            <!-- รหัสนักศึกษา -->
+                            <!-- อีเมล -->
                             <div class="mb-3">
-                                <label for="studentId" class="form-label">รหัสนักศึกษา <span class="text-danger">*</span></label>
-                                <input type="text" id="studentId" name="studentId" class="form-control" 
-                                       placeholder="กรอกรหัสนักศึกษา" required>
+                                <label for="email" class="form-label">อีเมล <span class="text-danger">*</span></label>
+                                <input type="email" id="email" name="email" class="form-control" 
+                                       placeholder="กรอกอีเมล" required>
                             </div>
 
                             <!-- รหัสผ่าน -->
