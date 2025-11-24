@@ -55,6 +55,7 @@ router.get('/', async (req, res) => {
     usersSnapshot.forEach(doc => {
       const userData = doc.data();
       users.push({
+        uid: doc.id,
         studentId: userData.studentId,
         prefix: userData.prefix || '',
         firstName: userData.firstName,
@@ -121,16 +122,20 @@ router.get('/api/users', async (req, res) => {
     usersSnapshot.forEach(doc => {
       const userData = doc.data();
       users.push({
+        uid: doc.id,
         studentId: userData.studentId,
         prefix: userData.prefix,
         firstName: userData.firstName,
         lastName: userData.lastName,
         email: userData.email,
         phone: userData.phone,
+        age: userData.age,
+        birthdate: userData.birthdate,
         faculty: userData.faculty || 'ยังไม่ระบุ',
         major: userData.major || 'ยังไม่ระบุ',
         year: userData.year || 'ยังไม่ระบุ',
         role: userData.role || 'student',
+        authProvider: userData.authProvider || 'email',
         createdAt: userData.createdAt
       });
     });
@@ -187,10 +192,11 @@ router.post('/api/users/:studentId/role', async (req, res) => {
 });
 
 // Update user data
-router.put('/api/users/:studentId', async (req, res) => {
+router.put('/api/users/:uid', async (req, res) => {
   try {
-    const { studentId } = req.params;
-    const { prefix, firstName, lastName, email, phone, age, birthdate, faculty, major, year, role } = req.body;
+    const { uid } = req.params;
+    const { studentId: newStudentIdRaw, prefix, firstName, lastName, email, phone, age, birthdate, faculty, major, year, role } = req.body;
+    const newStudentId = newStudentIdRaw ? String(newStudentIdRaw).trim() : '';
     
     // Validate required fields
     if (!firstName || !lastName || !email) {
@@ -203,6 +209,8 @@ router.put('/api/users/:studentId', async (req, res) => {
     }
 
     const db = req.app.get('db');
+
+    // Build the base update data (without changing doc id)
     const updateData = {
       prefix: prefix || '',
       firstName: firstName.trim(),
@@ -218,9 +226,47 @@ router.put('/api/users/:studentId', async (req, res) => {
       updatedAt: new Date().toISOString()
     };
 
-    await db.collection('users').doc(studentId).update(updateData);
+    // Fetch current user to detect studentId change
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ success: false, message: 'ไม่พบผู้ใช้' });
+    }
 
-    res.json({ success: true, message: 'อัพเดทข้อมูลสำเร็จ', data: updateData });
+    const before = userDoc.data();
+
+    // Optional uniqueness check for studentId
+    if (newStudentId && newStudentId !== before.studentId) {
+      const dupSnap = await db.collection('users').where('studentId', '==', newStudentId).get();
+      const hasOther = dupSnap.docs.some(d => d.id !== uid);
+      if (hasOther) {
+        return res.status(400).json({ success: false, message: 'รหัสนักศึกษานี้มีอยู่ในระบบแล้ว' });
+      }
+    }
+
+    // Apply update (including new studentId if provided)
+    const finalData = { ...updateData };
+    if (newStudentId) finalData.studentId = newStudentId;
+    await userRef.update(finalData);
+
+    // If studentId changed, cascade to survey_responses.userId
+    if (newStudentId && newStudentId !== before.studentId) {
+      const responsesSnapshot = await db.collection('survey_responses').where('userId', '==', before.studentId).get();
+      if (!responsesSnapshot.empty) {
+        const docs = [];
+        responsesSnapshot.forEach(d => docs.push(d));
+        const chunkSize = 450;
+        for (let i = 0; i < docs.length; i += chunkSize) {
+          const batch = db.batch();
+          docs.slice(i, i + chunkSize).forEach(d => {
+            batch.update(db.collection('survey_responses').doc(d.id), { userId: newStudentId });
+          });
+          await batch.commit();
+        }
+      }
+    }
+
+    res.json({ success: true, message: 'อัพเดทข้อมูลสำเร็จ', data: { ...before, ...finalData, uid } });
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ success: false, message: 'เกิดข้อผิดพลาด' });

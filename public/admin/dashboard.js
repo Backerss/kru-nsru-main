@@ -473,214 +473,41 @@ function initTrendChart(trendData) {
   }
 }
 
-// Initialize User Management with Pagination
+// Initialize User Management with DataTables
 function initUserManagement() {
-  const searchInput = document.getElementById('searchUsers');
-  const filterRole = document.getElementById('filterRole');
-  const filterAuthProvider = document.getElementById('filterAuthProvider');
-  const entriesPerPage = document.getElementById('entriesPerPage');
-  const tableBody = document.getElementById('tableBody');
-  const pagination = document.getElementById('pagination');
-  const paginationInfo = document.getElementById('paginationInfo');
-  const tableInfo = document.getElementById('tableInfo');
-
-  const allRows = Array.from(tableBody.querySelectorAll('tr[data-student-id]'));
-
-  let currentPage = 1;
-  let rowsPerPage = parseInt(entriesPerPage?.value || 25);
-
-  // Filter and Pagination System
-  function applyFiltersAndPagination() {
-    const searchTerm = searchInput?.value.toLowerCase().trim() || '';
-    const roleFilter = filterRole?.value || '';
-    const authFilter = filterAuthProvider?.value || '';
-
-    // Filter rows
-    const filteredRows = allRows.filter(row => {
-      const name = (row.dataset.name || '').toLowerCase();
-      const email = (row.dataset.email || '').toLowerCase();
-      const studentId = (row.dataset.studentId || '').toLowerCase();
-      const role = row.dataset.role || '';
-      const authProvider = row.dataset.authProvider || '';
-
-      const matchesSearch = !searchTerm ||
-        name.includes(searchTerm) ||
-        email.includes(searchTerm) ||
-        studentId.includes(searchTerm);
-      const matchesRole = !roleFilter || role === roleFilter;
-      const matchesAuth = !authFilter || authProvider === authFilter;
-
-      return matchesSearch && matchesRole && matchesAuth;
-    });
-
-    const totalFiltered = filteredRows.length;
-    const totalPages = Math.ceil(totalFiltered / rowsPerPage) || 1;
-
-    // Adjust current page if needed
-    if (currentPage > totalPages) {
-      currentPage = totalPages;
-    }
-
-    // Hide all rows first
-    allRows.forEach(row => row.style.display = 'none');
-
-    // Show only paginated rows
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    const visibleRows = filteredRows.slice(start, end);
-
-    visibleRows.forEach(row => row.style.display = '');
-
-    // Show empty state message if no results
-    const noDataRow = document.getElementById('noDataRow');
-    if (totalFiltered === 0) {
-      if (!noDataRow) {
-        const tbody = document.getElementById('tableBody');
-        const emptyRow = document.createElement('tr');
-        emptyRow.id = 'noDataRow';
-        emptyRow.innerHTML = `
-          <td colspan="6" class="text-center text-muted py-5">
-            <i class="bi bi-inbox display-4 d-block mb-3"></i>
-            <p>ไม่พบข้อมูลที่ค้นหา</p>
-          </td>
-        `;
-        tbody.appendChild(emptyRow);
-      } else {
-        noDataRow.style.display = '';
+  // Initialize DataTable
+  const table = $('#usersTable').DataTable({
+    responsive: true,
+    pageLength: 5,
+    lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "ทั้งหมด"]],
+    language: {
+      lengthMenu: "แสดง _MENU_ รายการ",
+      zeroRecords: "ไม่พบข้อมูล",
+      info: "แสดงหน้า _PAGE_ จาก _PAGES_",
+      infoEmpty: "ไม่มีข้อมูล",
+      infoFiltered: "(กรองจาก _MAX_ รายการทั้งหมด)",
+      search: "ค้นหา:",
+      paginate: {
+        first: "แรกสุด",
+        last: "สุดท้าย",
+        next: "ถัดไป",
+        previous: "ก่อนหน้า"
       }
-    } else {
-      if (noDataRow) {
-        noDataRow.style.display = 'none';
-      }
-    }
+    },
+    order: [[0, 'asc']], // เรียงตามรหัสนักศึกษา
+    columnDefs: [
+      { responsivePriority: 1, targets: 0 }, // รหัสนักศึกษา
+      { responsivePriority: 2, targets: 1 }, // ชื่อ
+      { responsivePriority: 3, targets: -1 }, // จัดการ
+      { orderable: false, targets: -1 } // ปุ่มจัดการไม่ให้เรียง
+    ]
+  });
 
-    // Update info
-    if (tableInfo) {
-      tableInfo.textContent = `แสดง ${totalFiltered} จาก ${allRows.length}`;
-    }
-
-    if (paginationInfo) {
-      if (totalFiltered === 0) {
-        paginationInfo.textContent = 'ไม่พบข้อมูล';
-      } else {
-        paginationInfo.textContent = `แสดง ${start + 1}-${Math.min(end, totalFiltered)} จาก ${totalFiltered} รายการ`;
-      }
-    }
-
-    // Render pagination buttons
-    renderPagination(totalPages, totalFiltered);
+  // Refresh Table Button
+  const btnRefreshTable = document.getElementById('btnRefreshTable');
+  if (btnRefreshTable) {
+    btnRefreshTable.addEventListener('click', () => refreshUserTable(table));
   }
-
-  function renderPagination(totalPages, totalFiltered) {
-    if (!pagination) return;
-
-    pagination.innerHTML = '';
-
-    if (totalFiltered === 0 || totalPages === 1) {
-      return;
-    }
-
-    // Previous button
-    const prevLi = document.createElement('li');
-    prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-    prevLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage - 1}">«</a>`;
-    pagination.appendChild(prevLi);
-
-    // Page numbers
-    const maxButtons = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
-    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-
-    if (endPage - startPage < maxButtons - 1) {
-      startPage = Math.max(1, endPage - maxButtons + 1);
-    }
-
-    if (startPage > 1) {
-      const firstLi = document.createElement('li');
-      firstLi.className = 'page-item';
-      firstLi.innerHTML = `<a class="page-link" href="#" data-page="1">1</a>`;
-      pagination.appendChild(firstLi);
-
-      if (startPage > 2) {
-        const dotsLi = document.createElement('li');
-        dotsLi.className = 'page-item disabled';
-        dotsLi.innerHTML = `<span class="page-link">...</span>`;
-        pagination.appendChild(dotsLi);
-      }
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      const li = document.createElement('li');
-      li.className = `page-item ${i === currentPage ? 'active' : ''}`;
-      li.innerHTML = `<a class="page-link" href="#" data-page="${i}">${i}</a>`;
-      pagination.appendChild(li);
-    }
-
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        const dotsLi = document.createElement('li');
-        dotsLi.className = 'page-item disabled';
-        dotsLi.innerHTML = `<span class="page-link">...</span>`;
-        pagination.appendChild(dotsLi);
-      }
-
-      const lastLi = document.createElement('li');
-      lastLi.className = 'page-item';
-      lastLi.innerHTML = `<a class="page-link" href="#" data-page="${totalPages}">${totalPages}</a>`;
-      pagination.appendChild(lastLi);
-    }
-
-    // Next button
-    const nextLi = document.createElement('li');
-    nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-    nextLi.innerHTML = `<a class="page-link" href="#" data-page="${currentPage + 1}">»</a>`;
-    pagination.appendChild(nextLi);
-
-    // Add click handlers
-    pagination.querySelectorAll('a.page-link').forEach(link => {
-      link.addEventListener('click', function (e) {
-        e.preventDefault();
-        const page = parseInt(this.dataset.page);
-        if (page && page !== currentPage && page >= 1 && page <= totalPages) {
-          currentPage = page;
-          applyFiltersAndPagination();
-        }
-      });
-    });
-  }
-
-  // Event listeners
-  if (searchInput) {
-    searchInput.addEventListener('input', () => {
-      currentPage = 1;
-      applyFiltersAndPagination();
-    });
-  }
-
-  if (filterRole) {
-    filterRole.addEventListener('change', () => {
-      currentPage = 1;
-      applyFiltersAndPagination();
-    });
-  }
-
-  if (filterAuthProvider) {
-    filterAuthProvider.addEventListener('change', () => {
-      currentPage = 1;
-      applyFiltersAndPagination();
-    });
-  }
-
-  if (entriesPerPage) {
-    entriesPerPage.addEventListener('change', () => {
-      rowsPerPage = parseInt(entriesPerPage.value);
-      currentPage = 1;
-      applyFiltersAndPagination();
-    });
-  }
-
-  // Initial render
-  applyFiltersAndPagination();
 
   // Add User Button
   const btnAddUser = document.getElementById('btnAddUser');
@@ -792,8 +619,8 @@ function initUserManagement() {
       }
 
       // Fill form with user data
-      // Keep original id hidden (used for URL), allow editing the visible id
-      document.getElementById('edit_originalStudentId').value = userData.studentId || '';
+      // Keep original uid hidden (used for URL), allow editing the visible student id
+      document.getElementById('edit_originalStudentId').value = (userData.uid || userData.studentId || '');
       document.getElementById('edit_studentId_display').value = userData.studentId || '';
       document.getElementById('edit_prefix').value = prefix;
       document.getElementById('edit_firstName').value = firstName;
@@ -831,7 +658,7 @@ function initUserManagement() {
 
     const formData = new FormData(form);
     const userData = Object.fromEntries(formData);
-    const originalId = userData.originalStudentId;
+    const originalId = userData.originalStudentId; // now holds uid
     delete userData.originalStudentId; // not part of body
     const studentIdForUrl = originalId || userData.studentId;
 
@@ -857,14 +684,16 @@ function initUserManagement() {
 
       if (response.ok) {
         editUserModal.hide();
+        
+        // อัปเดตข้อมูลในตารางแบบ real-time
+        updateUserRowInTable(result.data);
+        
         Swal.fire({
           icon: 'success',
           title: 'บันทึกสำเร็จ',
           text: result.message,
           timer: 2000,
           showConfirmButton: false
-        }).then(() => {
-          window.location.reload();
         });
       } else {
         throw new Error(result.message);
@@ -1005,6 +834,534 @@ function initUserManagement() {
           });
 
           // Reload page to update user table
+          window.location.reload();
+        } else {
+          throw new Error(data.message || 'เกิดข้อผิดพลาด');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: error.message || 'ไม่สามารถยกเลิกการเชื่อมต่อได้',
+          confirmButtonText: 'ตกลง'
+        });
+      }
+    });
+  });
+}
+
+// Update user row in table
+function updateUserRowInTable(userData) {
+  // ใช้ uid หาแถวแทน studentId เพราะ studentId อาจเปลี่ยน
+  const uid = userData.uid;
+  let row = null;
+  
+  // หาแถวจาก data-uid attribute
+  const allRows = document.querySelectorAll('tr[data-student-id]');
+  allRows.forEach(r => {
+    const editBtn = r.querySelector('.btn-edit-user');
+    if (editBtn) {
+      try {
+        const rowData = JSON.parse(editBtn.dataset.user);
+        if (rowData.uid === uid || rowData.studentId === uid) {
+          row = r;
+        }
+      } catch (e) {
+        // Skip invalid JSON
+      }
+    }
+  });
+  
+  if (!row) {
+    console.log('Row not found for uid:', uid, '- refreshing page...');
+    window.location.reload();
+    return;
+  }
+
+  // สร้างชื่อเต็ม
+  const fullName = `${userData.prefix || ''}${userData.firstName} ${userData.lastName}`;
+
+  // อัปเดต data attributes ทั้งหมดที่ใช้งานบนแถว
+  row.dataset.studentId = userData.studentId || '';
+  row.dataset.name = fullName || '';
+  row.dataset.email = userData.email || '';
+  row.dataset.role = userData.role || '';
+  row.dataset.authProvider = userData.authProvider || 'email';
+  row.dataset.faculty = userData.faculty || '';
+  row.dataset.major = userData.major || '';
+  row.dataset.year = userData.year || '';
+
+  // อัปเดต badge role
+  const roleBadges = {
+    'student': '<span class="badge bg-primary">นักศึกษา</span>',
+    'teacher': '<span class="badge bg-success">อาจารย์</span>',
+    'admin': '<span class="badge bg-danger">แอดมิน</span>',
+    'person': '<span class="badge bg-secondary">บุคคลธรรมดา</span>'
+  };
+
+  // อัปเดต auth provider badge
+  const authBadges = {
+    'email': '<span class="badge bg-light text-dark"><i class="bi bi-envelope me-1"></i>Email</span>',
+    'google': '<span class="badge bg-light text-dark"><i class="bi bi-google me-1"></i>Google</span>'
+  };
+
+  // อัปเดตเซลล์ในตาราง โดยแมปคอลัมน์ตามโครงสร้างปัจจุบัน
+  const cells = row.querySelectorAll('td');
+  if (cells.length >= 7) {
+    // คอลัมน์ตามลำดับ: 0=studentId,1=name,2=email,3=faculty,4=major,5=year,6=role,7=auth,8=actions
+    // ปรับค่าตามที่มีอยู่ (fallback ถ้า index เกิน)
+    if (cells[0]) cells[0].textContent = userData.studentId || '';
+    if (cells[1]) cells[1].innerHTML = `<strong>${fullName}</strong>`;
+    if (cells[2]) cells[2].textContent = userData.email || '';
+    if (cells[3]) cells[3].textContent = userData.faculty || 'ยังไม่ระบุ';
+    if (cells[4]) cells[4].textContent = userData.major || 'ยังไม่ระบุ';
+    if (cells[5]) cells[5].textContent = userData.year || 'ยังไม่ระบุ';
+    if (cells[6]) cells[6].innerHTML = roleBadges[userData.role] || `<span class="badge bg-secondary">${userData.role || 'นักศึกษา'}</span>`;
+    if (cells[7]) cells[7].innerHTML = authBadges[userData.authProvider || 'email'] || '';
+
+    // อัปเดต data ในปุ่มภายในคอลัมน์ actions
+    const editBtn = row.querySelector('.btn-edit-user');
+    if (editBtn) {
+      try { editBtn.dataset.user = JSON.stringify(userData); } catch (e) { editBtn.setAttribute('data-user', JSON.stringify(userData)); }
+      editBtn.dataset.studentId = userData.studentId || '';
+    }
+
+    const deleteBtn = row.querySelector('.btn-delete-user');
+    if (deleteBtn) {
+      deleteBtn.dataset.studentId = userData.studentId || '';
+      deleteBtn.dataset.name = fullName || '';
+    }
+
+    const googleBtn = row.querySelector('.btn-disconnect-google');
+    if (googleBtn) {
+      googleBtn.dataset.studentId = userData.studentId || '';
+      googleBtn.dataset.name = fullName || '';
+      googleBtn.dataset.email = userData.email || '';
+    }
+  }
+
+  // แสดง highlight animation
+  row.style.transition = 'background-color 0.5s';
+  row.style.backgroundColor = '#d4edda';
+  setTimeout(() => {
+    row.style.backgroundColor = '';
+  }, 2000);
+
+  console.log('Table row updated successfully!');
+}
+
+// Refresh user table data
+async function refreshUserTable(dataTable) {
+  const btnRefreshTable = document.getElementById('btnRefreshTable');
+  const icon = btnRefreshTable?.querySelector('i');
+  
+  try {
+    // หมุนไอคอนและปิดปุ่ม
+    if (icon) {
+      icon.classList.add('spin-animation');
+    }
+    if (btnRefreshTable) {
+      btnRefreshTable.disabled = true;
+    }
+
+    // รับประกันให้หมุนอย่างน้อย 1 วินาที
+    const [response] = await Promise.all([
+      fetch('/admin/api/users'),
+      new Promise(resolve => setTimeout(resolve, 1000))
+    ]);
+    
+    const result = await response.json();
+
+    if (result.success && result.users) {
+      // ล้างและอัปเดตข้อมูลใน DataTable
+      dataTable.clear();
+      
+      // Add each user row and attach dataset attributes (studentId, role, authProvider, user JSON)
+      for (const userData of result.users) {
+        const fullName = `${userData.prefix || ''}${userData.firstName} ${userData.lastName}`;
+        const roleBadge = getRoleBadge(userData.role);
+        const authBadge = getAuthBadge(userData.authProvider || 'email');
+        const actionButtons = getActionButtons(userData);
+        const userDataJson = JSON.stringify(userData).replace(/'/g, '&apos;');
+
+        // Add row and immediately draw so we can access the created DOM node
+        const added = dataTable.row.add([
+          userData.studentId,
+          fullName,
+          userData.email,
+          userData.faculty || '-',
+          userData.major || '-',
+          userData.year || '-',
+          roleBadge,
+          authBadge,
+          actionButtons
+        ]);
+
+        // draw(false) to avoid full re-order each iteration, then set attributes on the created row
+        const rowApi = added.draw(false);
+        const rowNode = rowApi.node();
+        if (rowNode) {
+          try {
+            rowNode.setAttribute('data-student-id', userData.studentId || '');
+            rowNode.setAttribute('data-user', userDataJson);
+            rowNode.setAttribute('data-role', userData.role || '');
+            rowNode.setAttribute('data-auth-provider', userData.authProvider || 'email');
+          } catch (e) {
+            // ignore attribute setting errors
+            console.warn('Could not set row dataset attributes', e);
+          }
+        }
+      }
+
+      // Final draw to ensure paging/sorting updated
+      dataTable.draw(false);
+      
+      // Rebind event listeners
+      rebindUserTableEvents();
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'สำเร็จ!',
+        text: 'รีเฟรชข้อมูลเรียบร้อย',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } else {
+      throw new Error('ไม่สามารถโหลดข้อมูลได้');
+    }
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'เกิดข้อผิดพลาด',
+      text: error.message
+    });
+  } finally {
+    if (icon) {
+      icon.classList.remove('spin-animation');
+    }
+    if (btnRefreshTable) {
+      btnRefreshTable.disabled = false;
+    }
+  }
+}
+
+// Helper functions for rendering table cells
+function getRoleBadge(role) {
+  const badges = {
+    'admin': '<span class="badge bg-danger">ผู้ดูแลระบบ</span>',
+    'teacher': '<span class="badge bg-warning text-dark">อาจารย์</span>',
+    'person': '<span class="badge bg-info">บุคคลธรรมดา</span>',
+    'student': '<span class="badge bg-secondary">นักศึกษา</span>'
+  };
+  return badges[role] || badges['student'];
+}
+
+function getAuthBadge(authProvider) {
+  if (authProvider === 'google') {
+    return '<span class="badge bg-primary"><i class="bi bi-google me-1"></i>Google OAuth</span>';
+  }
+  return '<span class="badge bg-secondary"><i class="bi bi-key me-1"></i>รหัสผ่าน</span>';
+}
+
+function getActionButtons(userData) {
+  const userDataJson = JSON.stringify(userData).replace(/'/g, '&apos;');
+  let buttons = '<div class="btn-group btn-group-sm">';
+  
+  if (userData.authProvider === 'google') {
+    buttons += `
+      <button class="btn btn-outline-warning btn-disconnect-google" 
+              data-student-id="${userData.studentId}"
+              data-name="${userData.prefix || ''}${userData.firstName} ${userData.lastName}"
+              data-email="${userData.email}"
+              title="ยกเลิกการเชื่อมต่อ Google">
+        <i class="bi bi-x-circle"></i>
+      </button>
+    `;
+  }
+  
+  buttons += `
+    <button class="btn btn-outline-primary btn-edit-user" 
+            data-student-id="${userData.studentId}"
+            data-user='${userDataJson}'
+            title="แก้ไขข้อมูล">
+      <i class="bi bi-pencil"></i>
+    </button>
+    <button class="btn btn-outline-danger btn-delete-user" 
+            data-student-id="${userData.studentId}"
+            data-name="${userData.prefix || ''}${userData.firstName} ${userData.lastName}"
+            title="ลบผู้ใช้">
+      <i class="bi bi-trash"></i>
+    </button>
+  </div>`;
+  
+  return buttons;
+}
+
+// Show loading overlay in table
+function showTableLoading(tableBody) {
+  const loadingRow = document.createElement('tr');
+  loadingRow.id = 'table-loading-row';
+  loadingRow.innerHTML = `
+    <td colspan="9" class="text-center py-5">
+      <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 200px;">
+        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+          <span class="visually-hidden">กำลังโหลด...</span>
+        </div>
+        <h5 class="text-muted mb-2">กำลังรีเฟรชข้อมูล...</h5>
+        <p class="text-muted mb-0 small">โปรดรอสักครู่</p>
+      </div>
+    </td>
+  `;
+  tableBody.innerHTML = '';
+  tableBody.appendChild(loadingRow);
+}
+
+// Hide loading overlay
+function hideTableLoading() {
+  const loadingRow = document.getElementById('table-loading-row');
+  if (loadingRow) {
+    loadingRow.remove();
+  }
+}
+
+// Update table with new data (without page reload)
+function updateTableWithNewData(users) {
+  const tableBody = document.querySelector('#usersTable tbody');
+  if (!tableBody) return;
+  // สร้าง HTML สำหรับแถวใหม่ (ให้ตรงกับ header ใน EJS)
+  const newRows = users.map(userData => {
+    const fullName = `${userData.prefix || ''}${userData.firstName} ${userData.lastName}`;
+    const roleBadgeClass = userData.role === 'admin' ? 'danger' : userData.role === 'teacher' ? 'warning' : userData.role === 'person' ? 'info' : 'secondary';
+    const roleLabel = userData.role === 'admin' ? 'ผู้ดูแลระบบ' : userData.role === 'teacher' ? 'อาจารย์' : userData.role === 'person' ? 'บุคคลธรรมดา' : 'นักศึกษา';
+
+    // Auth provider label (simple text inside small badge)
+    const authHtml = userData.authProvider === 'google'
+      ? `<span class="badge bg-primary"><i class="bi bi-google me-1"></i>Google OAuth</span>`
+      : `<span class="badge bg-secondary"><i class="bi bi-key me-1"></i>รหัสผ่าน</span>`;
+
+    // Action buttons: disconnect (if google), edit, delete — match EJS order and classes
+    const disconnectBtn = userData.authProvider === 'google' ?
+      `<button class="btn btn-outline-warning btn-disconnect-google" data-student-id="${userData.studentId}" data-name="${fullName}" data-email="${userData.email}" title="ยกเลิกการเชื่อมต่อ Google"><i class="bi bi-x-circle"></i></button>`
+      : '';
+
+    const escapedUserJson = JSON.stringify(userData).replace(/'/g, "&#39;");
+
+    return `
+      <tr data-student-id="${userData.studentId}" data-role="${userData.role}" data-user='${escapedUserJson}' data-auth-provider="${userData.authProvider || 'email'}" data-faculty="${userData.faculty || ''}" data-major="${userData.major || ''}" data-year="${userData.year || ''}">
+        <td>${userData.studentId}</td>
+        <td>${fullName}</td>
+        <td>${userData.email || ''}</td>
+        <td class="d-none d-md-table-cell">${userData.faculty || 'ยังไม่ระบุ'}</td>
+        <td class="d-none d-lg-table-cell">${userData.major || 'ยังไม่ระบุ'}</td>
+        <td class="d-none d-lg-table-cell">${userData.year || 'ยังไม่ระบุ'}</td>
+        <td>
+          <span class="badge bg-${roleBadgeClass}">${roleLabel}</span>
+        </td>
+        <td class="d-none d-xl-table-cell">
+          ${authHtml}
+        </td>
+        <td>
+          <div class="btn-group btn-group-sm">
+            ${disconnectBtn}
+            <button class="btn btn-outline-primary btn-edit-user" data-student-id="${userData.studentId}" data-user='${escapedUserJson}' title="แก้ไขข้อมูล">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-delete-user" data-student-id="${userData.studentId}" data-name="${fullName}" title="ลบผู้ใช้">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // แทนที่ tbody ด้วยข้อมูลใหม่
+  tableBody.innerHTML = newRows;
+
+  // ผูก event listeners ใหม่สำหรับปุ่มทั้งหมด
+  rebindUserTableEvents();
+
+  console.log('Table refreshed with', users.length, 'users');
+}
+
+// Rebind event listeners after table refresh
+function rebindUserTableEvents() {
+  const editUserModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+
+  // Edit User Buttons
+  document.querySelectorAll('.btn-edit-user').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const userData = JSON.parse(this.dataset.user);
+      console.log('User Data:', userData);
+
+      let prefix = userData.prefix || '';
+      let firstName = userData.firstName || '';
+
+      if (!prefix && firstName) {
+        if (firstName.startsWith('นาย')) {
+          prefix = 'นาย';
+          firstName = firstName.substring(3);
+        } else if (firstName.startsWith('นางสาว')) {
+          prefix = 'นางสาว';
+          firstName = firstName.substring(6);
+        } else if (firstName.startsWith('นาง')) {
+          prefix = 'นาง';
+          firstName = firstName.substring(3);
+        }
+      }
+
+      document.getElementById('edit_originalStudentId').value = (userData.uid || userData.studentId || '');
+      document.getElementById('edit_studentId_display').value = userData.studentId || '';
+      document.getElementById('edit_prefix').value = prefix;
+      document.getElementById('edit_firstName').value = firstName;
+      document.getElementById('edit_lastName').value = userData.lastName || '';
+      document.getElementById('edit_email').value = userData.email || '';
+      document.getElementById('edit_phone').value = userData.phone || '';
+      document.getElementById('edit_birthdate').value = userData.birthdate || '';
+      const computedAge = computeAgeFromBirthdate(userData.birthdate) || userData.age || '';
+      document.getElementById('edit_age').value = computedAge;
+      document.getElementById('edit_faculty').value = (userData.faculty && userData.faculty !== 'ยังไม่ระบุ') ? userData.faculty : '';
+      document.getElementById('edit_major').value = (userData.major && userData.major !== 'ยังไม่ระบุ') ? userData.major : '';
+      document.getElementById('edit_year').value = (userData.year && userData.year !== 'ยังไม่ระบุ') ? userData.year : '';
+      document.getElementById('edit_role').value = userData.role || 'student';
+
+      const googleAuthNotice = document.getElementById('googleAuthNotice');
+      if (userData.authProvider === 'google') {
+        googleAuthNotice.style.display = 'block';
+      } else {
+        googleAuthNotice.style.display = 'none';
+      }
+
+      editUserModal.show();
+    });
+  });
+
+  // Delete User Buttons
+  document.querySelectorAll('.btn-delete-user').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const studentId = this.dataset.studentId;
+      const name = this.dataset.name;
+
+      const result = await Swal.fire({
+        title: 'ยืนยันการลบ',
+        html: `คุณต้องการลบผู้ใช้ <strong>${name}</strong> ใช่หรือไม่?<br><small class="text-danger">การลบจะไม่สามารถกู้คืนได้</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
+      });
+
+      if (result.isConfirmed) {
+        try {
+          const response = await fetch(`/admin/api/users/${studentId}`, {
+            method: 'DELETE'
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            Swal.fire({
+              icon: 'success',
+              title: 'ลบสำเร็จ',
+              text: data.message,
+              timer: 2000,
+              showConfirmButton: false
+            }).then(() => {
+              window.location.reload();
+            });
+          } else {
+            throw new Error(data.message);
+          }
+        } catch (error) {
+          Swal.fire({
+            icon: 'error',
+            title: 'เกิดข้อผิดพลาด',
+            text: error.message
+          });
+        }
+      }
+    });
+  });
+
+  // Disconnect Google OAuth Buttons
+  document.querySelectorAll('.btn-disconnect-google').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const studentId = this.dataset.studentId;
+      const name = this.dataset.name;
+      const email = this.dataset.email;
+
+      const result = await Swal.fire({
+        title: 'ยกเลิกการเชื่อมต่อ Google OAuth?',
+        html: `
+          <p>คุณต้องการยกเลิกการเชื่อมต่อ Google OAuth สำหรับ:</p>
+          <div class="text-start my-3">
+            <strong>ชื่อ:</strong> ${name}<br>
+            <strong>อีเมล:</strong> ${email}
+          </div>
+          <div class="alert alert-warning text-start">
+            <strong>⚠️ การดำเนินการนี้จะ:</strong>
+            <ul class="mb-0">
+              <li>สร้างรหัสผ่านสุ่ม 8 ตัวอักษร</li>
+              <li>ส่งรหัสผ่านใหม่ไปยัง ${email}</li>
+              <li>ผู้ใช้จะต้องเข้าสู่ระบบด้วยรหัสผ่านแทน Google OAuth</li>
+            </ul>
+          </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยัน ยกเลิกการเชื่อมต่อ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6'
+      });
+
+      if (!result.isConfirmed) return;
+
+      Swal.fire({
+        title: 'กำลังดำเนินการ...',
+        html: 'กำลังยกเลิกการเชื่อมต่อและส่งรหัสผ่านใหม่',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      try {
+        const response = await fetch(`/admin/api/users/${studentId}/disconnect-google`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          let html = `<p>${data.message}</p>`;
+          if (data.warning) {
+            html += `<div class="alert alert-warning">${data.warning}</div>`;
+          }
+          if (data.temporaryPassword) {
+            html += `
+              <div class="alert alert-info">
+                <strong>รหัสผ่านชั่วคราว:</strong><br>
+                <code style="font-size: 20px; font-weight: bold;">${data.temporaryPassword}</code><br>
+                <small>กรุณาบันทึกรหัสนี้และแจ้งผู้ใช้</small>
+              </div>
+            `;
+          }
+
+          await Swal.fire({
+            icon: 'success',
+            title: 'ยกเลิกการเชื่อมต่อสำเร็จ!',
+            html: html,
+            confirmButtonText: 'ตกลง'
+          });
+
           window.location.reload();
         } else {
           throw new Error(data.message || 'เกิดข้อผิดพลาด');
